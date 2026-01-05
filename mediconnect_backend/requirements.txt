@@ -1,0 +1,7 @@
+apscheduler
+sqlalchemy
+pydantic-settings
+asyncpg
+google-generativeai
+python-dotenv
+fastapi-limiter

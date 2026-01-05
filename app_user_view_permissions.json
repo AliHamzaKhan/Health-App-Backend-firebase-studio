@@ -1,0 +1,45 @@
+{
+  "admin": {
+    "dashboard": true,
+    "doctorApplications": true,
+    "manageDoctors": true,
+    "manageHospitals": true,
+    "manageMedicines": true,
+    "manageUsers": true,
+    "notifications": true,
+    "income": true,
+    "permissions": true
+  },
+  "doctor": {
+    "viewSchedule": true,
+    "patientRecords": true,
+    "createSoapNote": true,
+    "analyzeReport": true,
+    "messages": true,
+    "manageHospitals": true,
+    "incomeTracking": true,
+    "helpCenter": true,
+    "medicineDatabase": true,
+    "interactionChecker": true,
+    "subscription": true,
+    "profileAndSettings": true
+  },
+  "patient": {
+    "addMedication": true,
+    "trackVitals": true,
+    "aiChatbot": true,
+    "analyzeReport": true,
+    "symptomChecker": true,
+    "allergyChecker": true,
+    "calorieChecker": true,
+    "findDoctors": true,
+    "nearbyHospitals": true,
+    "messages": true,
+    "manageTokens": true,
+    "helpCenter": true,
+    "viewAppointments": true,
+    "viewReports": true,
+    "viewMedications": true,
+    "profileAndSettings": true
+  }
+}
