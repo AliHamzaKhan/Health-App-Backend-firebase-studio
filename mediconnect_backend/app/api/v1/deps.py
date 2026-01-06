@@ -3,11 +3,13 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
+from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.schemas.token import TokenData
 from app.crud import crud_user
 from app.db.base import User
+
+settings = get_settings()
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"

@@ -1,7 +1,6 @@
-
 import os
 import json
-import google.generativeai as genai
+import google.genai as genai
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from app.schemas.ai import Report, ReportSummary, SoapNoteGenerationResponse, AIModel, AIModelCreate
 from app.schemas.ai_features import (
@@ -16,7 +15,6 @@ from app.crud import crud_ai
 from typing import List
 
 # Configure the Gemini API key
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
 router = APIRouter()
 

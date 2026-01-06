@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.db import base  # noqa: F401
-from app.models.permission import Permission
+from app.db.base import Permission
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ def init_db(db: Session) -> None:
         permissions_data = json.load(f)
 
     for role, permissions in permissions_data.items():
-        permission_in = schemas.PermissionCreate(role=role, permissions=permissions)
+        permission_in = schemas.PermissionCreate(role=role, permissions=list(permissions.keys()))
         db_permission = crud.crud_permission.get_by_role(db, role=role)
 
         if db_permission:

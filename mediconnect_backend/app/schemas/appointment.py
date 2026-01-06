@@ -1,6 +1,6 @@
 
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from typing import Optional, ForwardRef
 from datetime import date, time
 from .consultation import Consultation
 from .doctor import Doctor
@@ -31,9 +31,9 @@ class AppointmentUpdate(AppointmentBase):
 # Properties shared by models stored in DB
 class AppointmentInDBBase(AppointmentBase):
     id: int
-    doctor: Doctor
-    patient: Patient
-    consultation_details: Optional[Consultation] = None
+    doctor: 'Doctor'
+    patient: 'Patient'
+    consultation_details: Optional['Consultation'] = None
 
     model_config = ConfigDict(from_attributes=True)
 

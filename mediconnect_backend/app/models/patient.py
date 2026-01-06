@@ -12,7 +12,7 @@ class Patient(Base):
     address = Column(String)
     photo_url = Column(String, name="photo")
     medical_history = Column(Text)
-    user_id = Column(Integer, ForeignKey("user.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="patient_profile")
     appointments = relationship("Appointment", back_populates="patient")

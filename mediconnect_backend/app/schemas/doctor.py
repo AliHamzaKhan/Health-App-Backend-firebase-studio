@@ -1,7 +1,8 @@
 
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, List
-from .appointment import Appointment
+from typing import Optional, List, ForwardRef
+
+Appointment = ForwardRef('Appointment')
 
 # Shared properties
 class DoctorBase(BaseModel):
@@ -23,7 +24,7 @@ class DoctorUpdate(DoctorBase):
 # Properties shared by models stored in DB
 class DoctorInDBBase(DoctorBase):
     id: int
-    appointments: List[Appointment] = []
+    appointments: List['Appointment'] = []
     model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
@@ -33,3 +34,8 @@ class Doctor(DoctorInDBBase):
 # Properties stored in DB
 class DoctorInDB(DoctorInDBBase):
     pass
+
+class DoctorDashboardStats(BaseModel):
+    total_patients: int
+    upcoming_appointments: int
+    total_revenue: float

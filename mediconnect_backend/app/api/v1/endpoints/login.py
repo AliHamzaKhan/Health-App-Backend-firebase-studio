@@ -4,11 +4,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import deps
-from app.core.config import settings
+from app.core.config import get_settings
 from app.core.security import create_access_token, verify_password
 from app.crud import crud_user
 from app.schemas.token import Token
 
+settings = get_settings()
 router = APIRouter()
 
 @router.post("/login/access-token", response_model=Token)

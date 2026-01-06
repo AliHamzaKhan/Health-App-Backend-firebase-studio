@@ -1,6 +1,8 @@
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Union, Optional
 from pydantic import model_validator
+from functools import lru_cache
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env")
@@ -16,6 +18,7 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     DATABASE_URL: str
     TEST_DATABASE_URL: Optional[str] = None
+    GEMINI_API_KEY: str
 
     @model_validator(mode='after')
     def set_test_database_url(self) -> 'Settings':
@@ -25,4 +28,8 @@ class Settings(BaseSettings):
             )
         return self
 
-settings = Settings()
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()
+
+settings = get_settings()

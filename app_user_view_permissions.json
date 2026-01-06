@@ -1,15 +1,4 @@
 {
-  "admin": {
-    "dashboard": true,
-    "doctorApplications": true,
-    "manageDoctors": true,
-    "manageHospitals": true,
-    "manageMedicines": true,
-    "manageUsers": true,
-    "notifications": true,
-    "income": true,
-    "permissions": true
-  },
   "doctor": {
     "viewSchedule": true,
     "patientRecords": true,

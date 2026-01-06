@@ -81,7 +81,7 @@ def update_doctor(
     doctor = crud.doctor.get(db, id=id)
     if not doctor:
         raise HTTPException(
-            status_code=44,
+            status_code=404,
             detail="The user with this username does not exist in the system",
         )
     doctor = crud.doctor.update(db, db_obj=doctor, obj_in=doctor_in)
@@ -104,7 +104,7 @@ def read_doctor_by_id(
 
 @router.get("/me/dashboard-stats", response_model=schemas.DoctorDashboardStats)
 def get_dashboard_stats(
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Fetches all key performance indicators (KPIs) and recent data for the main doctor dashboard.
@@ -119,7 +119,7 @@ def get_dashboard_stats(
 
 @router.get("/me/profile", response_model=schemas.Doctor)
 def get_doctor_profile(
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Fetches the complete, detailed profile for the currently logged-in doctor.
@@ -131,7 +131,7 @@ def update_doctor_profile(
     *,
     db: Session = Depends(deps.get_db),
     doctor_in: schemas.DoctorUpdate,
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Updates the profile of the currently logged-in doctor.
@@ -143,7 +143,7 @@ def update_doctor_profile(
 async def upload_doctor_documents(
     license: UploadFile = File(...), 
     degree: UploadFile = File(...),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ):
     """
     Allows a newly registered doctor to upload their medical license and degree certificate for verification.
@@ -153,7 +153,7 @@ async def upload_doctor_documents(
 
 @router.get("/me/verification-status")
 def get_verification_status(
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ):
     """
     Allows a doctor to check their current verification status (`pending`, `approved`, `rejected`).
@@ -164,7 +164,7 @@ def get_verification_status(
 @router.get("/me/appointments", response_model=List[schemas.Appointment])
 def get_doctor_appointments(
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieves a list of all appointments for the logged-in doctor.
@@ -176,7 +176,7 @@ def get_doctor_appointments(
 def get_doctor_appointment(
     appointment_id: int,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieves the details of a single appointment.
@@ -191,7 +191,7 @@ def update_doctor_appointment(
     appointment_id: int,
     appointment_in: schemas.AppointmentUpdate,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Allows a doctor to cancel or reschedule an appointment.
@@ -207,7 +207,7 @@ def finalize_consultation(
     appointment_id: int,
     consultation_in: schemas.ConsultationCreate,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Finalizes a consultation, submitting all details.
@@ -224,7 +224,7 @@ def finalize_consultation(
 @router.get("/me/patients", response_model=List[schemas.Patient])
 def get_doctor_patients(
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieves a list of all unique patients associated with the doctor.
@@ -236,7 +236,7 @@ def get_doctor_patients(
 def get_patient_history(
     patient_id: int,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ):
     """
     Retrieves a specific patient's complete history.
@@ -252,7 +252,7 @@ def get_patient_history(
 def create_patient(
     patient_in: schemas.PatientCreate,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Manually creates a new patient record in the system.
@@ -264,7 +264,7 @@ def create_patient(
 def create_soap_note(
     soap_note_in: schemas.SoapNoteCreate,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Creates a standalone SOAP note for a patient.
@@ -277,7 +277,7 @@ def create_soap_note(
 @router.get("/me/hospital-schedules", response_model=List[schemas.HospitalSchedule])
 def get_hospital_schedules(
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Lists all hospital schedules for the doctor.
@@ -289,7 +289,7 @@ def get_hospital_schedules(
 def create_hospital_schedule(
     schedule_in: schemas.HospitalScheduleCreate,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Creates a new hospital schedule.
@@ -304,7 +304,7 @@ def update_hospital_schedule(
     schedule_id: int,
     schedule_in: schemas.HospitalScheduleUpdate,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Updates a hospital schedule.
@@ -319,7 +319,7 @@ def update_hospital_schedule(
 def delete_hospital_schedule(
     schedule_id: int,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Deletes a hospital schedule.
@@ -332,7 +332,7 @@ def delete_hospital_schedule(
 
 @router.get("/me/income/stats")
 def get_income_stats(
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ):
     """
     Retrieves key financial metrics.
@@ -342,7 +342,7 @@ def get_income_stats(
 
 @router.get("/me/income/chart-data")
 def get_income_chart_data(
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ):
     """
     Retrieves data formatted for revenue charts.
@@ -353,7 +353,7 @@ def get_income_chart_data(
 @router.get("/me/income/transactions", response_model=List[schemas.Transaction])
 def get_income_transactions(
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieves a list of recent financial transactions.
@@ -376,7 +376,7 @@ def get_doctor_subscription_plans(
 def purchase_subscription(
     plan_id: int,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_doctor),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ):
     """
     Handles the purchase of a recurring subscription.

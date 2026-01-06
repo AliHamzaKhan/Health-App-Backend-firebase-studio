@@ -10,7 +10,7 @@ from . import (
     reviews,
     notifications,
     admin,
-    ai,
+    # ai,
     symptoms,
     vitals,
     allergies,
@@ -29,7 +29,7 @@ api_router.include_router(transactions.router, prefix="/transactions", tags=["tr
 api_router.include_router(reviews.router, prefix="/reviews", tags=["reviews"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
-api_router.include_router(ai.router, prefix="/ai", tags=["ai"])
+# api_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 api_router.include_router(symptoms.router, prefix="/symptoms", tags=["symptoms"])
 api_router.include_router(vitals.router, prefix="/vitals", tags=["vitals"])
 api_router.include_router(allergies.router, prefix="/allergies", tags=["allergies"])

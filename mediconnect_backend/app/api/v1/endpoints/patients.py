@@ -156,7 +156,7 @@ def read_patient_subscription(
 @router.get("/me/appointments", response_model=List[schemas.Appointment])
 def get_patient_appointments(
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_patient),
+    current_user: models.User = Depends(deps.get_current_active_user),
     status: str = None,
 ) -> Any:
     """
@@ -173,7 +173,7 @@ def book_appointment(
     *,
     db: Session = Depends(deps.get_db),
     appointment_in: schemas.AppointmentCreate,
-    current_user: models.User = Depends(deps.get_current_active_patient),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Books a new appointment with a specified doctor.
@@ -188,7 +188,7 @@ def book_appointment(
 def get_patient_appointment(
     appointment_id: int,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_patient),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieves the full details of a single appointment.
@@ -203,7 +203,7 @@ def get_patient_appointment(
 def cancel_appointment(
     appointment_id: int,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_patient),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Allows the patient to cancel their upcoming appointment.

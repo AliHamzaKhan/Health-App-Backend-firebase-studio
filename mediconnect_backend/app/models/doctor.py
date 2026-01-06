@@ -10,7 +10,7 @@ class Doctor(Base):
     phone_number = Column(String, nullable=True)
     is_active = Column(Boolean(), default=True)
     photo_url = Column(String, name="photo")
-    user_id = Column(Integer, ForeignKey("user.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="doctor_profile")
     appointments = relationship("Appointment", back_populates="doctor")
