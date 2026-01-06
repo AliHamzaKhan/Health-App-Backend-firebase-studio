@@ -8,4 +8,6 @@ from app.models.transaction import Transaction
 from app.models.review import Review
 from app.models.notification import Notification
 from app.models.medication import Medication
-from app.models.permission import RolePermission
+from app.models.permission import Permission
+from app.models.hospital import Hospital
+from app.models.subscription import Subscription

@@ -2,7 +2,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from datetime import datetime, timedelta
 
-from app.db.base import Appointment, Notification, User, PatientProfile, DoctorProfile
+from app.db.base import Appointment, Notification, User
+from app.models.patient import Patient
+from app.models.doctor import Doctor
 from app.db.session import SessionLocal
 
 async def send_appointment_reminders():
@@ -24,11 +26,11 @@ async def send_appointment_reminders():
 
         for appt in appointments:
             # Get patient and doctor users
-            patient_profile = await db.get(PatientProfile, appt.patient_id)
-            doctor_profile = await db.get(DoctorProfile, appt.doctor_id)
+            patient = await db.get(Patient, appt.patient_id)
+            doctor = await db.get(Doctor, appt.doctor_id)
             
-            patient_user = await db.get(User, patient_profile.user_id)
-            doctor_user = await db.get(User, doctor_profile.user_id)
+            patient_user = await db.get(User, patient.user_id)
+            doctor_user = await db.get(User, doctor.user_id)
 
             # Create notifications
             patient_notification = Notification(
@@ -42,5 +44,6 @@ async def send_appointment_reminders():
 
             db.add_all([patient_notification, doctor_notification])
             appt.reminder_sent = True
+
 
         await db.commit()

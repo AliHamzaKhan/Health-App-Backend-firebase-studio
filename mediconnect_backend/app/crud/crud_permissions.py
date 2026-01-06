@@ -1,10 +1,10 @@
 from app.crud.base import CRUDBase
-from app.models.permission import RolePermission
-from app.schemas.permission import RolePermissionCreate, RolePermission as RolePermissionSchema
+from app.models.permission import Permission
+from app.schemas.permission import PermissionCreate, Permission as PermissionSchema
 from sqlalchemy.orm import Session
 
-class CRUDPermission(CRUDBase[RolePermission, RolePermissionCreate, RolePermissionSchema]):
-    def get_by_role(self, db: Session, *, role: str) -> RolePermission:
-        return db.query(RolePermission).filter(RolePermission.role == role).first()
+class CRUDPermission(CRUDBase[Permission, PermissionCreate, PermissionSchema]):
+    def get_by_role(self, db: Session, *, role: str) -> Permission:
+        return db.query(Permission).filter(Permission.role == role).first()
 
-permission = CRUDPermission(RolePermission)
+permission = CRUDPermission(Permission)

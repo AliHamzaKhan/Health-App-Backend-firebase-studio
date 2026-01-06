@@ -2,17 +2,17 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 
-class MedicineBase(BaseModel):
+class MedicationBase(BaseModel):
     name: str
     description: Optional[str] = None
 
-class MedicineCreate(MedicineBase):
+class MedicationCreate(MedicationBase):
     pass
 
-class MedicineUpdate(MedicineBase):
+class MedicationUpdate(MedicationBase):
     pass
 
-class Medicine(MedicineBase):
+class Medication(MedicationBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 

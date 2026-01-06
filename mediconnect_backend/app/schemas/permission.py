@@ -1,14 +1,14 @@
 from pydantic import BaseModel
 from typing import Dict, Any
 
-class RolePermissionBase(BaseModel):
+class PermissionBase(BaseModel):
     role: str
     permissions: Dict[str, Any]
 
-class RolePermissionCreate(RolePermissionBase):
+class PermissionCreate(PermissionBase):
     pass
 
-class RolePermission(RolePermissionBase):
+class Permission(PermissionBase):
     id: int
 
     class Config:

@@ -9,15 +9,18 @@ from app.api.v1 import deps
 from app.api.v1.deps import get_current_active_admin
 from app.crud.crud_user import user as crud_user
 from app.crud.crud_hospital import hospital as crud_hospital
-from app.crud.crud_medicine import crud_medicine
+from app.crud.crud_medication import crud_medication
 from app.crud.crud_notification import crud_notification
 from app.crud.crud_transaction import crud_transaction
 from app.crud import crud_doctor
-from app.db.base import DoctorProfile, User, Hospital, Medicine
+from app.models.doctor import Doctor
+from app.models.user import User
+from app.models.hospital import Hospital
+from app.models.medication import Medication
 from app.schemas.doctor import DoctorUpdate
 from app.schemas.user import UserUpdate
 from app.schemas.hospital import HospitalCreate, HospitalUpdate
-from app.schemas.medicine import MedicineCreate, MedicineUpdate
+from app.schemas.medication import MedicationCreate, MedicationUpdate
 from app.schemas.notification import NotificationCreate, NotificationBroadcast
 
 router = APIRouter()
@@ -189,55 +192,55 @@ async def import_hospitals(file: UploadFile = File(...), db: AsyncSession = Depe
         raise HTTPException(status_code=500, detail=f"An error occurred during file processing: {e}")
 
 
-@router.get("/medicines")
-async def get_medicines(search: Optional[str] = None, page: int = 1, size: int = 10,
+@router.get("/medications")
+async def get_medications(search: Optional[str] = None, page: int = 1, size: int = 10,
                   db: AsyncSession = Depends(deps.get_db),
                   current_user=Depends(get_current_active_admin)):
     """
-    Lists all medicines with pagination and search.
+    Lists all medications with pagination and search.
     """
     skip = (page - 1) * size
-    medicines = await crud_medicine.get_multi(db, skip=skip, limit=size)
-    total_medicines = len(medicines)
-    return {"total": total_medicines, "page": page, "size": size, "medicines": medicines}
+    medications = await crud_medication.get_multi(db, skip=skip, limit=size)
+    total_medications = len(medications)
+    return {"total": total_medications, "page": page, "size": size, "medications": medications}
 
-@router.post("/medicines")
-async def create_medicine(medicine: MedicineCreate, db: AsyncSession = Depends(deps.get_db), current_user=Depends(get_current_active_admin)):
+@router.post("/medications")
+async def create_medication(medication: MedicationCreate, db: AsyncSession = Depends(deps.get_db), current_user=Depends(get_current_active_admin)):
     """
-    Creates a new medicine entry.
+    Creates a new medication entry.
     """
-    return await crud_medicine.create(db, obj_in=medicine)
+    return await crud_medication.create(db, obj_in=medication)
 
-@router.put("/medicines/{medicine_id}")
-async def update_medicine(medicine_id: int, medicine: MedicineUpdate, db: AsyncSession = Depends(deps.get_db), current_user=Depends(get_current_active_admin)):
+@router.put("/medications/{medication_id}")
+async def update_medication(medication_id: int, medication: MedicationUpdate, db: AsyncSession = Depends(deps.get_db), current_user=Depends(get_current_active_admin)):
     """
-    Updates a medicine entry.
+    Updates a medication entry.
     """
-    db_medicine = await crud_medicine.get(db, id=medicine_id)
-    if not db_medicine:
-        raise HTTPException(status_code=404, detail="Medicine not found")
-    return await crud_medicine.update(db, db_obj=db_medicine, obj_in=medicine)
+    db_medication = await crud_medication.get(db, id=medication_id)
+    if not db_medication:
+        raise HTTPException(status_code=404, detail="Medication not found")
+    return await crud_medication.update(db, db_obj=db_medication, obj_in=medication)
 
-@router.delete("/medicines/{medicine_id}")
-async def delete_medicine(medicine_id: int, db: AsyncSession = Depends(deps.get_db), current_user=Depends(get_current_active_admin)):
+@router.delete("/medications/{medication_id}")
+async def delete_medication(medication_id: int, db: AsyncSession = Depends(deps.get_db), current_user=Depends(get_current_active_admin)):
     """
-    Deletes a medicine entry.
+    Deletes a medication entry.
     """
     try:
-        await crud_medicine.remove(db, id=medicine_id)
+        await crud_medication.remove(db, id=medication_id)
         return Response(status_code=204)
     except Exception as e:
-        raise HTTPException(status_code=404, detail="Medicine not found")
+        raise HTTPException(status_code=404, detail="Medication not found")
 
-@router.get("/medicines/export-template")
-async def export_medicines_template(current_user=Depends(get_current_active_admin)):
+@router.get("/medications/export-template")
+async def export_medications_template(current_user=Depends(get_current_active_admin)):
     """
     Downloads a CSV file with only headers for bulk import.
     """
     output = io.StringIO()
     output.write("name,manufacturer,strength\n")
     output.seek(0)
-    return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=medicine_template.csv"})
+    return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=medication_template.csv"})
 
 @router.post("/broadcast-notification")
 async def broadcast_notification(notification: NotificationBroadcast, db: AsyncSession = Depends(deps.get_db), current_user=Depends(get_current_active_admin)):

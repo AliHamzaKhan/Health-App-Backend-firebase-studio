@@ -1,7 +1,7 @@
 
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
-from .medicine import PrescribedMedicine
+from .medication import PrescribedMedicine
 
 # Shared properties
 class ConsultationBase(BaseModel):
