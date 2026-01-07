@@ -12,7 +12,8 @@ from .hospital_schedule import HospitalSchedule, HospitalScheduleCreate, Hospita
 from .consultation import Consultation, ConsultationCreate, ConsultationUpdate
 from .soap import SoapNote, SoapNoteCreate
 from .subscription import Subscription, SubscriptionPurchase
-from .permission import Permission, PermissionCreate
+from .permission import Permission,PermissionBase,PermissionCreate, PermissionUpdate,RolePermissionCreate
+from .review import ReviewCreateForPatient, ReviewCreate
 
 Doctor.model_rebuild()
 Appointment.model_rebuild()

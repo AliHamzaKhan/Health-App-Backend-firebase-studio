@@ -1,4 +1,4 @@
-from .crud_user import user
+from .crud_user import crud_user
 from .crud_patient import patient
 from .crud_doctor import doctor
 from .crud_appointment import appointment
@@ -10,3 +10,4 @@ from .crud_hospital import hospital
 from .crud_consultation import crud_consultation
 from .crud_subscription import subscription
 from .crud_permissions import permission
+from .crud_symptom import symptom

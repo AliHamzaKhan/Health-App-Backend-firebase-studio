@@ -4,6 +4,7 @@ from app.db.base_class import Base
 from datetime import datetime
 
 class Review(Base):
+    __tablename__ = "reviews"
     id = Column(Integer, primary_key=True, index=True)
     rating = Column(Integer, nullable=False)
     comment = Column(String, nullable=True)

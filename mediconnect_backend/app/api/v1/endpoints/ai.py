@@ -23,6 +23,7 @@ def _upload_to_gemini(file_path: str, mime_type: str):
 
     See https://ai.google.dev/gemini-api/docs/prompting_with_media
     """
+
     file = genai.upload_file(path=file_path, mime_type=mime_type)
     print(f"Uploaded file '{file.display_name}' as: {file.uri}")
     return file

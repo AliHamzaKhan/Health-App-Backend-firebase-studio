@@ -2,20 +2,22 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.api.v1 import deps
 from app.core.config import get_settings
 from app.core.security import create_access_token, verify_password
-from app.crud import crud_user
+from app.crud.crud_user import crud_user
+# from app.crud import crud_user
+# from app.crud.crud_user import CRUDUser
 from app.schemas.token import Token
 
 settings = get_settings()
 router = APIRouter()
 
+
 @router.post("/login/access-token", response_model=Token)
 async def login_access_token(
-    db: AsyncSession = Depends(deps.get_db),
-    form_data: OAuth2PasswordRequestForm = Depends()
+        db: AsyncSession = Depends(deps.get_db),
+        form_data: OAuth2PasswordRequestForm = Depends()
 ):
     """
     OAuth2 compatible token login, get an access token for future requests

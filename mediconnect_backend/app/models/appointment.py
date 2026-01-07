@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 
 class Appointment(Base):
+    __tablename__ = "appointments"
     id = Column(Integer, primary_key=True, index=True)
     patient_id = Column(Integer, ForeignKey("patient.id"))
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
@@ -16,5 +17,5 @@ class Appointment(Base):
 
     patient = relationship("Patient", back_populates="appointments")
     doctor = relationship("Doctor", back_populates="appointments")
-    consultation_details = relationship("Consultation", uselist=False, back_populates="appointment", cascade="all, delete-orphan")
-    review = relationship("Review", uselist=False, back_populates="appointment", cascade="all, delete-orphan")
+    consultation_details = relationship("Consultation", uselist=False, back_populates="appointments", cascade="all, delete-orphan")
+    review = relationship("Review", uselist=False, back_populates="appointments", cascade="all, delete-orphan")

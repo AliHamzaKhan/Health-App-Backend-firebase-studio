@@ -1,89 +1,64 @@
-from fastapi import APIRouter, Depends, Query, Response, UploadFile, File, HTTPException
-from typing import Optional, List
+from fastapi import APIRouter, Depends
+from typing import List, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import deps
 from app.crud.crud_transaction import crud_transaction
-from app.schemas.transaction import TransactionCreate, TransactionUpdate, Transaction
-from app.db.base import User
+from app.schemas.transaction import Transaction
+from app.models.user import User
 
 router = APIRouter()
 
-@router.get("/transactions")
-async def get_transactions(page: int = 1, size: int = 10, db: AsyncSession = Depends(deps.get_db)):
-    skip = (page - 1) * size
-    transactions = await crud_transaction.get_multi(db, skip=skip, limit=size)
-    total_transactions = len(transactions)
-    return {"total": total_transactions, "page": page, "size": size, "transactions": transactions}
-
-@router.post("/transactions", response_model=Transaction)
-async def create_transaction(
-    *,
+@router.get("/", response_model=List[Transaction])
+async def read_transactions(
     db: AsyncSession = Depends(deps.get_db),
-    transaction_in: TransactionCreate
-):
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(deps.get_current_active_admin),
+) -> Any:
     """
-    Create new transaction.
+    Retrieve transactions.
     """
-    transaction = await crud_transaction.create(db, obj_in=transaction_in)
-    return transaction
-
-@router.get("/transactions/user", response_model=List[Transaction])
-async def get_transactions_by_user(
-    *,
-    db: AsyncSession = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
-    page: int = 1,
-    size: int = 10,
-):
-    """
-    Get transactions for current user.
-    """
-    skip = (page - 1) * size
-    transactions = await crud_transaction.get_by_user(db, user_id=current_user.id, skip=skip, limit=size)
+    transactions = await crud_transaction.get_transactions(db, skip=skip, limit=limit)
     return transactions
 
-@router.get("/transactions/{id}", response_model=Transaction)
-async def get_transaction(
-    *,
-    db: AsyncSession = Depends(deps.get_db),
-    id: int
-):
-    """
-    Get transaction by ID.
-    """
-    transaction = await crud_transaction.get(db, id=id)
-    if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-    return transaction
 
-@router.put("/transactions/{id}", response_model=Transaction)
-async def update_transaction(
-    *,
+@router.get("/user/{user_id}", response_model=List[Transaction])
+async def read_transactions_by_user(
+    user_id: int,
     db: AsyncSession = Depends(deps.get_db),
-    id: int,
-    transaction_in: TransactionUpdate
-):
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
     """
-    Update transaction.
+    Retrieve transactions for a specific user.
     """
-    transaction = await crud_transaction.get(db, id=id)
-    if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-    transaction = await crud_transaction.update(db, db_obj=transaction, obj_in=transaction_in)
-    return transaction
+    transactions = await crud_transaction.get_by_user(
+        db, user_id=user_id, skip=skip, limit=limit
+    )
+    return transactions
 
-@router.delete("/transactions/{id}", response_model=Transaction)
-async def delete_transaction(
-    *,
+
+@router.get("/revenue", response_model=float)
+async def get_total_revenue(
     db: AsyncSession = Depends(deps.get_db),
-    id: int
-):
+    current_user: User = Depends(deps.get_current_active_admin),
+) -> Any:
     """
-    Delete transaction.
+    Get total revenue.
     """
-    transaction = await crud_transaction.get(db, id=id)
-    if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-    transaction = await crud_transaction.remove(db, id=id)
-    return transaction
+    total_revenue = await crud_transaction.get_total_revenue(db)
+    return total_revenue
+
+
+@router.get("/revenue/by-month", response_model=List[dict])
+async def get_revenue_by_month(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Get revenue by month.
+    """
+    revenue_by_month = await crud_transaction.get_revenue_by_month(db)
+    return revenue_by_month

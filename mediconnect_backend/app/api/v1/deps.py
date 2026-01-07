@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.schemas.token import TokenData
-from app.crud import crud_user
+from app.crud.crud_user import crud_user
 from app.db.base import User
 
 settings = get_settings()
@@ -15,8 +15,8 @@ reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
 )
 
-async def get_db():
-    async with SessionLocal() as session:
+def get_db():
+    with SessionLocal() as session:
         yield session
 
 async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depends(reusable_oauth2)):

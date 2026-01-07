@@ -11,8 +11,15 @@ class ReviewBase(BaseModel):
 class ReviewCreate(ReviewBase):
     pass
 
-class ReviewUpdate(ReviewBase):
-    pass
+class ReviewCreateForPatient(BaseModel):
+    rating: int
+    comment: Optional[str] = None
+
+class ReviewUpdate(BaseModel):
+    rating: Optional[int] = None
+    comment: Optional[str] = None
+    doctor_id: Optional[int] = None
+    patient_id: Optional[int] = None
 
 class Review(ReviewBase):
     id: int

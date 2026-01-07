@@ -1,58 +1,54 @@
 from fastapi import APIRouter, Depends, HTTPException
-from typing import List
+from typing import List, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import deps
 from app.crud.crud_review import crud_review
-from app.schemas.review import ReviewCreate, ReviewUpdate, Review
+from app.schemas.review import Review, ReviewCreate, ReviewUpdate
+from app.models.user import User
 
 router = APIRouter()
 
-@router.post("/reviews", response_model=Review)
-async def create_review(
-    *,
+@router.get("/", response_model=List[Review])
+async def read_reviews(
     db: AsyncSession = Depends(deps.get_db),
-    review_in: ReviewCreate
-):
-    review = await crud_review.create(db, obj_in=review_in)
-    return review
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Retrieve reviews.
+    """
+    reviews = await crud_review.get_multi(db, skip=skip, limit=limit)
+    return reviews
 
-@router.get("/reviews/{id}", response_model=Review)
-async def get_review(
-    *,
+
+@router.get("/{review_id}", response_model=Review)
+async def read_review(
+    review_id: int,
     db: AsyncSession = Depends(deps.get_db),
-    id: int
-):
-    review = await crud_review.get(db, id=id)
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Get a specific review by ID.
+    """
+    review = await crud_review.get(db, id=review_id)
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
     return review
 
-@router.get("/reviews", response_model=List[Review])
-async def get_all_reviews(db: AsyncSession = Depends(deps.get_db)):
-    return await crud_review.get_multi(db)
 
-@router.put("/reviews/{id}", response_model=Review)
-async def update_review(
-    *,
-    db: AsyncSession = Depends(deps.get_db),
-    id: int,
-    review_in: ReviewUpdate
-):
-    review = await crud_review.get(db, id=id)
-    if not review:
-        raise HTTPException(status_code=404, detail="Review not found")
-    review = await crud_review.update(db, db_obj=review, obj_in=review_in)
-    return review
-
-@router.delete("/reviews/{id}", response_model=Review)
+@router.delete("/{review_id}", response_model=Review)
 async def delete_review(
-    *,
+    review_id: int,
     db: AsyncSession = Depends(deps.get_db),
-    id: int
-):
-    review = await crud_review.get(db, id=id)
+    current_user: User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Delete a review.
+    """
+    review = await crud_review.get(db, id=review_id)
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    review = await crud_review.remove(db, id=id)
+    review = await crud_review.remove(db, id=review_id)
     return review

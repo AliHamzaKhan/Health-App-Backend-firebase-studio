@@ -20,3 +20,6 @@ class User(Base):
 
     doctor_profile = relationship("Doctor", back_populates="user", uselist=False)
     patient_profile = relationship("Patient", back_populates="user", uselist=False)
+
+    transactions = relationship("Transaction", back_populates="user")
+    notifications = relationship("Notification", back_populates="user")  # ✅ added

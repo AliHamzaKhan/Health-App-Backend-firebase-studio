@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 
 class Consultation(Base):
+    __tablename__ = "consultation_details"
     id = Column(Integer, primary_key=True, index=True)
     appointment_id = Column(Integer, ForeignKey("appointment.id"))
     hpi = Column(Text, nullable=True)

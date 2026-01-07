@@ -7,7 +7,7 @@ from starlette.responses import StreamingResponse
 
 from app.api.v1 import deps
 from app.api.v1.deps import get_current_active_admin
-from app.crud.crud_user import user as crud_user
+from app.crud.crud_user import crud_user
 from app.crud.crud_hospital import hospital as crud_hospital
 from app.crud.crud_medication import crud_medication
 from app.crud.crud_notification import crud_notification

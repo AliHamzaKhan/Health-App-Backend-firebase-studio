@@ -32,4 +32,4 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         return result.scalars().all()
 
 
-user = CRUDUser(User)
+crud_user = CRUDUser(User)
