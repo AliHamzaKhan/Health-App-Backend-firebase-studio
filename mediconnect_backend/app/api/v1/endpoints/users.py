@@ -15,12 +15,12 @@ def read_users(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
-    current_user: models.User = Depends(deps.get_current_active_superuser),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieve users.
     """
-    users = crud.user.get_multi(db, skip=skip, limit=limit)
+    users = crud.crud_user.get_multi(db, skip=skip, limit=limit)
     return StandardResponse(data=users, message="Users retrieved successfully.")
 
 
@@ -29,18 +29,18 @@ def create_user(
     *,
     db: Session = Depends(deps.get_db),
     user_in: schemas.UserCreate,
-    current_user: models.User = Depends(deps.get_current_active_superuser),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Create new user.
     """
-    user = crud.user.get_by_email(db, email=user_in.email)
+    user = crud.crud_user.get_by_email(db, email=user_in.email)
     if user:
         raise HTTPException(
             status_code=400,
             detail="The user with this username already exists in the system.",
         )
-    user = crud.user.create(db, obj_in=user_in)
+    user = crud.crud_user.create(db, obj_in=user_in)
     return StandardResponse(data=user, message="User created successfully.")
 
 
@@ -57,7 +57,7 @@ def update_user_me(
     Update own user.
     """
     current_user_data = schemas.UserUpdate(password=password, full_name=full_name, email=email)
-    user = crud.user.update(db, db_obj=current_user, obj_in=current_user_data)
+    user = crud.crud_user.update(db, db_obj=current_user, obj_in=current_user_data)
     return StandardResponse(data=user, message="User updated successfully.")
 
 
@@ -81,10 +81,10 @@ def read_user_by_id(
     """
     Get a specific user by id.
     """
-    user = crud.user.get(db, id=user_id)
+    user = crud.crud_user.get(db, id=user_id)
     if user == current_user:
         return StandardResponse(data=user, message="User retrieved successfully.")
-    if not crud.user.is_superuser(current_user):
+    if not crud.crud_user.is_superuser(current_user):
         raise HTTPException(
             status_code=400, detail="The user doesn't have enough privileges"
         )
@@ -97,16 +97,16 @@ def update_user(
     db: Session = Depends(deps.get_db),
     user_id: int,
     user_in: schemas.UserUpdate,
-    current_user: models.User = Depends(deps.get_current_active_superuser),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Update a user.
     """
-    user = crud.user.get(db, id=user_id)
+    user = crud.crud_user.get(db, id=user_id)
     if not user:
         raise HTTPException(
             status_code=404,
             detail="The user with this username does not exist in the system",
         )
-    user = crud.user.update(db, db_obj=user, obj_in=user_in)
+    user = crud.crud_user.update(db, db_obj=user, obj_in=user_in)
     return StandardResponse(data=user, message="User updated successfully.")

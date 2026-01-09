@@ -13,6 +13,7 @@ from .subscription import Subscription
 from .symptom import Symptom
 from .transaction import Transaction
 from .user import User
+from .vital import Vital
 
 __all__ = [
     "AIModel",
@@ -30,4 +31,5 @@ __all__ = [
     "Symptom",
     "Transaction",
     "User",
+    "Vital",
 ]

@@ -1,6 +1,8 @@
 import os
 import json
 import google.genai as genai
+from google.genai import types
+import tempfile
 from fastapi import APIRouter, UploadFile, File, Form, Depends
 from app.schemas.ai import Report, ReportSummary, SoapNoteGenerationResponse, AIModel, AIModelCreate
 from app.schemas.ai_features import (
@@ -19,131 +21,272 @@ from app.schemas.response import StandardResponse
 
 router = APIRouter()
 
-def _upload_to_gemini(file_path: str, mime_type: str):
-    """Uploads the given file to Gemini.
 
-    See https://ai.google.dev/gemini-api/docs/prompting_with_media
+def _upload_to_gemini(file_path: str, mime_type: str, display_name: str):
+    """
+    Uploads a file to Gemini using the NEW google.genai SDK
     """
 
-    file = genai.upload_file(path=file_path, mime_type=mime_type)
+    client = genai.Client()
+
+    file = client.files.upload(
+        file=file_path,  # ✅ CORRECT ARGUMENT NAME
+        config=types.UploadFileConfig(
+            mime_type=mime_type,
+            display_name=display_name,
+        )
+    )
+
     print(f"Uploaded file '{file.display_name}' as: {file.uri}")
     return file
 
-@router.post("/analyze_report", response_model=StandardResponse[ReportSummary])
-async def analyze_report(report: Report):
-    """
-    Analyzes a medical report using the Gemini API to generate a summary.
-    """
-    try:
-        model = genai.GenerativeModel('gemini-pro')
-        prompt = f"Please analyze the following medical report and provide a concise summary:\n\n{report.report}"
-        response = model.generate_content(prompt)
-        summary = response.text
-    except Exception as e:
-        return StandardResponse(success=False, message=f"An error occurred while analyzing the report: {e}")
-    return StandardResponse(data=ReportSummary(summary=summary), message="Report analyzed successfully.")
 
 @router.post("/generate-soap-note", response_model=StandardResponse[SoapNoteGenerationResponse])
 async def generate_soap_note(
     audio_file: UploadFile = File(...),
-    context: str = Form(None)
+    context: str = Form(None),
 ):
-    """
-    Generates a SOAP note from an audio file using the Gemini API.
-    """
     if not audio_file:
         return StandardResponse(success=False, message="No audio file provided.")
 
+    tmp_path = None
     try:
-        # Write the audio file to a temporary location
-        with open(audio_file.filename, "wb") as f:
-            f.write(audio_file.file.read())
-        
-        # Upload the audio file to Gemini
-        uploaded_file = _upload_to_gemini(audio_file.filename, audio_file.content_type)
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=os.path.splitext(audio_file.filename)[1],
+        ) as tmp:
+            tmp.write(await audio_file.read())
+            tmp_path = tmp.name
 
-        # Transcribe the audio and generate the SOAP note
-        model = genai.GenerativeModel(model_name="gemini-pro")
-        prompt = f"Please transcribe the following audio and generate a SOAP note based on the content. Context: {context}"
-        response = model.generate_content([prompt, uploaded_file])
-        
-        # Clean up the temporary file
-        os.remove(audio_file.filename)
+        uploaded_file = _upload_to_gemini(
+            file_path=tmp_path,
+            mime_type=audio_file.content_type,
+            display_name=audio_file.filename,
+        )
+
+        client = genai.Client()
+
+        prompt = (
+            "Please transcribe the following audio and generate a SOAP note. "
+            f"Context: {context}"
+        )
+
+        response = client.models.generate_content(
+            model="gemini-1.5-pro",
+            contents=[prompt, uploaded_file],
+        )
 
     except Exception as e:
         return StandardResponse(success=False, message=f"An error occurred while generating the SOAP note: {e}")
 
-    return StandardResponse(data=SoapNoteGenerationResponse(generated_text=response.text), message="SOAP note generated successfully.")
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+    return StandardResponse(
+        data=SoapNoteGenerationResponse(generated_text=response.text),
+        message="SOAP note generated successfully.",
+    )
 
 
-@router.post("/report-analysis", response_model=StandardResponse[ReportAnalysisResponse])
-async def report_analysis(request: ReportAnalysisRequest):
-    """
-    Analyzes a medical report using the Gemini API to provide a summary.
-    """
+@router.post("/report/text-analysis", response_model=StandardResponse[ReportSummary])
+async def analyze_text_report(reports: List[Report]):
     try:
-        model = genai.GenerativeModel('gemini-pro')
-        prompt = f"Please analyze the following medical report and provide a summary:\n\n{request.report}"
-        response = model.generate_content(prompt)
+        client = genai.Client()
+
+        compiled_report = "\n\n".join(
+            f"""
+            Report Title: {r.title}
+            Patient ID: {r.patient_id}
+            Summary: {r.summary}
+            Recommendations: {r.recommendations}
+            """
+            for r in reports
+        )
+
+        prompt = (
+            "You are a medical AI assistant.\n"
+            "Analyze the following medical reports and produce a concise, unified summary "
+            "highlighting key findings, risks, and next steps.\n\n"
+            f"{compiled_report}"
+        )
+
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=[prompt],
+        )
+
         summary = response.text
+
     except Exception as e:
-        return StandardResponse(success=False, message=f"An error occurred while analyzing the report: {e}")
-    return StandardResponse(data=ReportAnalysisResponse(summary=summary), message="Report analysis successful.")
+        return StandardResponse(
+            success=False,
+            message=f"Text report analysis failed: {e}",
+        )
+
+    return StandardResponse(
+        data=ReportSummary(summary=summary),
+        message="Text reports analyzed successfully.",
+    )
+
+
+
+@router.post("/report/file-analysis", response_model=StandardResponse[ReportSummary])
+async def analyze_file_report(
+    images: List[UploadFile] = File(...),
+):
+    tmp_paths = []
+
+    try:
+        client = genai.Client()
+        uploaded_files = []
+
+        # 1️⃣ Save + upload each image
+        for image in images:
+            suffix = os.path.splitext(image.filename)[1]
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                tmp.write(await image.read())
+                tmp_paths.append(tmp.name)
+
+            uploaded = _upload_to_gemini(
+                file_path=tmp.name,
+                mime_type=image.content_type,
+                display_name=image.filename,
+            )
+
+            uploaded_files.append(uploaded)
+
+        # 2️⃣ Build Gemini contents
+        contents = [
+            "Analyze the following medical report images and provide a concise summary."
+        ]
+        contents.extend(uploaded_files)
+
+        # 3️⃣ Gemini call
+        response = client.models.generate_content(
+            model="gemini-1.5-pro",
+            contents=contents,
+        )
+
+        summary = response.text
+
+    except Exception as e:
+        return StandardResponse(
+            success=False,
+            message=f"Image report analysis failed: {e}",
+        )
+
+    finally:
+        # 4️⃣ Cleanup temp files
+        for path in tmp_paths:
+            if os.path.exists(path):
+                os.remove(path)
+
+    return StandardResponse(
+        data=ReportSummary(summary=summary),
+        message="Image report analyzed successfully.",
+    )
+
+
+
 
 @router.post("/symptom-checker", response_model=StandardResponse[SymptomCheckerResponse])
 async def symptom_checker(request: SymptomCheckerRequest):
-    """
-    Checks symptoms using the Gemini API and provides an assessment and recommended action.
-    """
     try:
-        model = genai.GenerativeModel('gemini-pro')
-        prompt = f"Please analyze the following symptoms and provide a potential diagnosis and recommended action in JSON format. The JSON should have two keys: 'assessment' and 'recommended_action'.\n\nSymptoms: {request.symptoms}"
-        response = model.generate_content(prompt)
+        client = genai.Client()
+
+        prompt = (
+            "Analyze the following symptoms and return JSON with keys "
+            "'assessment' and 'recommended_action'.\n\n"
+            f"Symptoms: {request.symptoms}"
+        )
+
+        response = client.models.generate_content(
+            model="gemini-1.5-pro",
+            contents=[prompt],
+        )
+
         response_json = json.loads(response.text)
-        assessment = response_json.get("assessment")
-        recommended_action = response_json.get("recommended_action")
+
     except Exception as e:
         return StandardResponse(success=False, message=f"An error occurred while checking symptoms: {e}")
-    return StandardResponse(data=SymptomCheckerResponse(assessment=assessment, recommended_action=recommended_action), message="Symptom check successful.")
+
+    return StandardResponse(
+        data=SymptomCheckerResponse(
+            assessment=response_json.get("assessment"),
+            recommended_action=response_json.get("recommended_action"),
+        ),
+        message="Symptom check successful.",
+    )
+
 
 @router.post("/allergy-checker", response_model=StandardResponse[AllergyCheckerResponse])
 async def allergy_checker(request: AllergyCheckerRequest):
-    """
-    Checks for allergies using the Gemini API and provides an assessment, confidence level, and potential allergens.
-    """
     try:
-        model = genai.GenerativeModel('gemini-pro')
-        prompt = f"Please analyze the following symptoms and medical history and determine if they could cause an allergic reaction. Provide the answer in JSON format with three keys: 'is_allergy' (boolean), 'confidence' (float between 0 and 1), and 'potential_allergens' (a list of strings).\n\nSymptons: {', '.join(request.symptoms)}\n\nMedical History: {', '.join(request.medical_history)}"
-        response = model.generate_content(prompt)
+        client = genai.Client()
+
+        prompt = (
+            "Determine if the following could be an allergic reaction. "
+            "Return JSON with keys: is_allergy, confidence, potential_allergens.\n\n"
+            f"Symptoms: {', '.join(request.symptoms)}\n"
+            f"Medical History: {', '.join(request.medical_history)}"
+        )
+
+        response = client.models.generate_content(
+            model="gemini-1.5-pro",
+            contents=[prompt],
+        )
+
         response_json = json.loads(response.text)
-        is_allergy = response_json.get("is_allergy")
-        confidence = response_json.get("confidence")
-        potential_allergens = response_json.get("potential_allergens")
+
     except Exception as e:
         return StandardResponse(success=False, message=f"An error occurred while checking for allergies: {e}")
-    return StandardResponse(data=AllergyCheckerResponse(is_allergy=is_allergy, confidence=confidence, potential_allergens=potential_allergens), message="Allergy check successful.")
+
+    return StandardResponse(
+        data=AllergyCheckerResponse(
+            is_allergy=response_json.get("is_allergy"),
+            confidence=response_json.get("confidence"),
+            potential_allergens=response_json.get("potential_allergens"),
+        ),
+        message="Allergy check successful.",
+    )
+
 
 @router.post("/calorie-checker", response_model=StandardResponse[CalorieCheckerResponse])
 async def calorie_checker(request: CalorieCheckerRequest):
-    """
-    Checks the calorie count of a food item using the Gemini API.
-    """
     try:
-        model = genai.GenerativeModel('gemini-pro')
-        prompt = f"Please provide the calorie count and a macronutrient breakdown (protein, carbohydrates, and fat) for the following food item in JSON format. The JSON should have two keys: 'calories' (integer) and 'breakdown' (a dictionary with keys 'protein', 'carbohydrates', and 'fat').\n\nFood item: {request.meal_description}"
-        response = model.generate_content(prompt)
+        client = genai.Client()
+
+        prompt = (
+            "Provide calorie count and macronutrient breakdown in JSON.\n\n"
+            f"Food item: {request.meal_description}"
+        )
+
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=[prompt],
+        )
+
         response_json = json.loads(response.text)
-        calories = response_json.get("calories")
-        breakdown = response_json.get("breakdown")
+
     except Exception as e:
         return StandardResponse(success=False, message=f"An error occurred while checking calories: {e}")
-    return StandardResponse(data=CalorieCheckerResponse(calories=calories, breakdown=breakdown), message="Calorie check successful.")
+
+    return StandardResponse(
+        data=CalorieCheckerResponse(
+            calories=response_json.get("calories"),
+            breakdown=response_json.get("breakdown"),
+        ),
+        message="Calorie check successful.",
+    )
+
 
 @router.post("/ai-models/", response_model=StandardResponse[AIModel])
 def create_ai_model(
-    *,
-    db: Session = Depends(deps.get_db),
-    ai_model_in: AIModelCreate,
+        *,
+        db: Session = Depends(deps.get_db),
+        ai_model_in: AIModelCreate,
 ):
     """
     Create new AI model.
@@ -154,9 +297,9 @@ def create_ai_model(
 
 @router.get("/ai-models/{ai_model_id}", response_model=StandardResponse[AIModel])
 def read_ai_model(
-    *,
-    db: Session = Depends(deps.get_db),
-    ai_model_id: int,
+        *,
+        db: Session = Depends(deps.get_db),
+        ai_model_id: int,
 ):
     """
     Get AI model by ID.
@@ -169,9 +312,9 @@ def read_ai_model(
 
 @router.get("/ai-models/", response_model=StandardResponse[List[AIModel]])
 def read_ai_models(
-    db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
+        db: Session = Depends(deps.get_db),
+        skip: int = 0,
+        limit: int = 100,
 ):
     """
     Retrieve AI models.

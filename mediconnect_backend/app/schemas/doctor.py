@@ -1,6 +1,10 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from app.schemas.schedule import Schedule
+    from app.schemas.appointment import Appointment
+    from app.schemas.review import Review
 
 # Shared properties
 class DoctorBase(BaseModel):

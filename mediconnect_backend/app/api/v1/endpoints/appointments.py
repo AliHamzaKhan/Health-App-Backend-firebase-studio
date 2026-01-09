@@ -22,7 +22,7 @@ async def read_patient_appointments(
     """
     if current_user.role != 5:
         return StandardResponse(success=False, message="Not authorized to access this resource")
-    appointments = await crud_appointment.get_multi_by_patient(db, patient_id=current_user.id, status=status)
+    appointments = await crud_appointment.appointment.get_multi_by_patient(db, patient_id=current_user.id, status=status)
     return StandardResponse(data=appointments, message="Patient appointments retrieved successfully.")
 
 
@@ -38,7 +38,7 @@ async def create_patient_appointment(
     """
     if current_user.role != 5:
         return StandardResponse(success=False, message="Not authorized to perform this action")
-    appointment = await crud_appointment.create_with_patient(db, obj_in=appointment_in, patient_id=current_user.id)
+    appointment = await crud_appointment.appointment.create_with_patient(db, obj_in=appointment_in, patient_id=current_user.id)
     return StandardResponse(data=appointment, message="Appointment created successfully.")
 
 
@@ -51,7 +51,7 @@ async def read_patient_appointment(
     """
     Get a specific appointment for the current patient.
     """
-    appointment = await crud_appointment.get(db, id=appointment_id)
+    appointment = await crud_appointment.appointment.get(db, id=appointment_id)
     if not appointment or appointment.patient_id != current_user.id:
         return StandardResponse(success=False, message="Appointment not found")
     return StandardResponse(data=appointment, message="Appointment retrieved successfully.")
@@ -66,12 +66,12 @@ async def cancel_patient_appointment(
     """
     Cancel an appointment for the current patient.
     """
-    appointment = await crud_appointment.get(db, id=appointment_id)
+    appointment = await crud_appointment.appointment.get(db, id=appointment_id)
     if not appointment or appointment.patient_id != current_user.id:
         return StandardResponse(success=False, message="Appointment not found")
-    
+
     update_data = {"status": "CANCELLED"}
-    updated_appointment = await crud_appointment.update(db, db_obj=appointment, obj_in=update_data)
+    updated_appointment = await crud_appointment.appointment.update(db, db_obj=appointment, obj_in=update_data)
     return StandardResponse(data=updated_appointment, message="Appointment cancelled successfully.")
 
 
@@ -90,7 +90,7 @@ async def read_doctor_appointments(
     """
     if current_user.role != 3:
         return StandardResponse(success=False, message="Not authorized to access this resource")
-    appointments = await crud_appointment.get_multi_by_doctor(
+    appointments = await crud_appointment.appointment.get_multi_by_doctor(
         db, doctor_id=current_user.id, status=status, start_date=startDate, end_date=endDate, skip=skip, limit=limit
     )
     return StandardResponse(data=appointments, message="Doctor appointments retrieved successfully.")
@@ -105,7 +105,7 @@ async def read_doctor_appointment(
     """
     Get a specific appointment for the current doctor.
     """
-    appointment = await crud_appointment.get(db, id=appointment_id)
+    appointment = await crud_appointment.appointment.get(db, id=appointment_id)
     if not appointment or appointment.doctor_id != current_user.id:
         return StandardResponse(success=False, message="Appointment not found")
     return StandardResponse(data=appointment, message="Appointment retrieved successfully.")
@@ -121,11 +121,11 @@ async def update_doctor_appointment(
     """
     Update an appointment for the current doctor.
     """
-    appointment = await crud_appointment.get(db, id=appointment_id)
+    appointment = await crud_appointment.appointment.get(db, id=appointment_id)
     if not appointment or appointment.doctor_id != current_user.id:
         return StandardResponse(success=False, message="Appointment not found")
 
-    updated_appointment = await crud_appointment.update(db, db_obj=appointment, obj_in=appointment_in)
+    updated_appointment = await crud_appointment.appointment.update(db, db_obj=appointment, obj_in=appointment_in)
     return StandardResponse(data=updated_appointment, message="Appointment updated successfully.")
 
 
@@ -142,14 +142,14 @@ async def create_consultation_for_appointment(
     if current_user.role != 3:
         return StandardResponse(success=False, message="Not authorized")
 
-    appointment = await crud_appointment.get(db, id=appointment_id)
+    appointment = await crud_appointment.appointment.get(db, id=appointment_id)
     if not appointment or appointment.doctor_id != current_user.id:
         return StandardResponse(success=False, message="Appointment not found")
 
     # This is a placeholder for where you'd create the consultation and link it to the appointment
     # For now, we'll just update the appointment status
     update_data = {"status": "COMPLETED"}
-    updated_appointment = await crud_appointment.update(db, db_obj=appointment, obj_in=update_data)
+    updated_appointment = await crud_appointment.appointment.update(db, db_obj=appointment, obj_in=update_data)
     return StandardResponse(data=updated_appointment, message="Consultation created and appointment status updated successfully.")
 
 @router.post("/doctors/me/appointments/follow-up", response_model=StandardResponse[Appointment])
@@ -163,8 +163,8 @@ async def create_follow_up_appointment(
     """
     if current_user.role != 3:
         return StandardResponse(success=False, message="Not authorized to perform this action")
-    
+
     # The doctor creates an appointment on behalf of a patient.
     # The `appointment_in` schema should contain the patient_id.
-    appointment = await crud_appointment.create(db, obj_in=appointment_in)
+    appointment = await crud_appointment.appointment.create(db, obj_in=appointment_in)
     return StandardResponse(data=appointment, message="Follow-up appointment created successfully.")

@@ -69,7 +69,7 @@ async def update_review(
     review = await crud_review.get(db=db, id=review_id)
     if not review:
         return StandardResponse(success=False, message="Review not found")
-    if review.user_id != current_user.id and not crud.user.is_superuser(current_user):
+    if review.user_id != current_user.id and not crud.crud_user.is_superuser(current_user):
         return StandardResponse(success=False, message="Not enough permissions")
     review = await crud_review.update(db=db, db_obj=review, obj_in=review_in)
     return StandardResponse(data=review, message="Review updated successfully.")

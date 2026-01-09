@@ -11,3 +11,5 @@ from app.models.medication import Medication
 from app.models.permission import Permission
 from app.models.hospital import Hospital
 from app.models.subscription import Subscription
+from app.models.allergy import Allergy
+from app.models.calorie import Calorie

@@ -1,7 +1,6 @@
-
 from typing import Any, List
 
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -14,15 +13,15 @@ router = APIRouter()
 
 @router.get("/", response_model=StandardResponse[List[schemas.Patient]])
 def read_patients(
-    db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
-    current_user: models.User = Depends(deps.get_current_active_user),
+        db: Session = Depends(deps.get_db),
+        skip: int = 0,
+        limit: int = 100,
+        current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieve patients.
     """
-    if crud.user.is_superuser(current_user):
+    if crud.crud_user.is_superuser(current_user):
         patients = crud.patient.get_multi(db, skip=skip, limit=limit)
         return StandardResponse(data=patients, message="Patients retrieved successfully.")
     else:
@@ -31,9 +30,9 @@ def read_patients(
 
 @router.post("/register", response_model=StandardResponse[schemas.Patient])
 def register_patient(
-    *,
-    db: Session = Depends(deps.get_db),
-    patient_in: schemas.PatientCreate,
+        *,
+        db: Session = Depends(deps.get_db),
+        patient_in: schemas.PatientCreate,
 ) -> Any:
     """
     Create new patient.
@@ -47,15 +46,15 @@ def register_patient(
 
 @router.post("/", response_model=StandardResponse[schemas.Patient])
 def create_patient(
-    *,
-    db: Session = Depends(deps.get_db),
-    patient_in: schemas.PatientCreate,
-    current_user: models.User = Depends(deps.get_current_active_user),
+        *,
+        db: Session = Depends(deps.get_db),
+        patient_in: schemas.PatientCreate,
+        current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Create new patient.
     """
-    if not crud.user.is_superuser(current_user):
+    if not crud.crud_user.is_superuser(current_user):
         return StandardResponse(success=False, message="Not enough permissions")
     patient = crud.patient.get_by_email(db, email=patient_in.email)
     if patient:
@@ -66,11 +65,11 @@ def create_patient(
 
 @router.put("/{id}", response_model=StandardResponse[schemas.Patient])
 def update_patient(
-    *,
-    db: Session = Depends(deps.get_db),
-    id: int,
-    patient_in: schemas.PatientUpdate,
-    current_user: models.User = Depends(deps.get_current_active_user),
+        *,
+        db: Session = Depends(deps.get_db),
+        id: int,
+        patient_in: schemas.PatientUpdate,
+        current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Update a patient.
@@ -84,9 +83,9 @@ def update_patient(
 
 @router.get("/{id}", response_model=StandardResponse[schemas.Patient])
 def read_patient_by_id(
-    id: int,
-    current_user: models.User = Depends(deps.get_current_active_user),
-    db: Session = Depends(deps.get_db),
+        id: int,
+        current_user: models.User = Depends(deps.get_current_active_user),
+        db: Session = Depends(deps.get_db),
 ) -> Any:
     """
     Get a specific patient by id.
@@ -99,7 +98,7 @@ def read_patient_by_id(
 
 @router.get("/me/tokens", response_model=StandardResponse[int])
 def read_patient_tokens(
-    current_user: models.User = Depends(deps.get_current_active_user),
+        current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Get current token count.
@@ -123,10 +122,10 @@ def read_subscription_plans() -> Any:
 
 @router.post("/subscriptions/purchase")
 def purchase_subscription(
-    *,
-    db: Session = Depends(deps.get_db),
-    purchase_in: SubscriptionPurchase,
-    current_user: models.User = Depends(deps.get_current_active_user),
+        *,
+        db: Session = Depends(deps.get_db),
+        purchase_in: SubscriptionPurchase,
+        current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Purchase a subscription or a token package.
@@ -138,7 +137,7 @@ def purchase_subscription(
 
 @router.get("/me/subscription", response_model=StandardResponse[dict])
 def read_patient_subscription(
-    current_user: models.User = Depends(deps.get_current_active_user),
+        current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Get current subscription.
@@ -150,9 +149,9 @@ def read_patient_subscription(
 
 @router.get("/me/appointments", response_model=StandardResponse[List[schemas.Appointment]])
 def get_patient_appointments(
-    db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_user),
-    status: str = None,
+        db: Session = Depends(deps.get_db),
+        current_user: models.User = Depends(deps.get_current_active_user),
+        status: str = None,
 ) -> Any:
     """
     Retrieves a list of the patient's own appointments.
@@ -165,10 +164,10 @@ def get_patient_appointments(
 
 @router.post("/me/appointments", response_model=StandardResponse[schemas.Appointment])
 def book_appointment(
-    *,
-    db: Session = Depends(deps.get_db),
-    appointment_in: schemas.AppointmentCreate,
-    current_user: models.User = Depends(deps.get_current_active_user),
+        *,
+        db: Session = Depends(deps.get_db),
+        appointment_in: schemas.AppointmentCreate,
+        current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Books a new appointment with a specified doctor.
@@ -181,9 +180,9 @@ def book_appointment(
 
 @router.get("/me/appointments/{appointment_id}", response_model=StandardResponse[schemas.Appointment])
 def get_patient_appointment(
-    appointment_id: int,
-    db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_user),
+        appointment_id: int,
+        db: Session = Depends(deps.get_db),
+        current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieves the full details of a single appointment.
@@ -196,9 +195,9 @@ def get_patient_appointment(
 
 @router.patch("/me/appointments/{appointment_id}", response_model=StandardResponse[schemas.Appointment])
 def cancel_appointment(
-    appointment_id: int,
-    db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_user),
+        appointment_id: int,
+        db: Session = Depends(deps.get_db),
+        current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Allows the patient to cancel their upcoming appointment.

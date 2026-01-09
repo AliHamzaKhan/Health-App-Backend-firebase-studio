@@ -11,3 +11,4 @@ from .crud_consultation import crud_consultation
 from .crud_subscription import subscription
 from .crud_permissions import permission
 from .crud_symptom import symptom
+from .crud_vital import vital

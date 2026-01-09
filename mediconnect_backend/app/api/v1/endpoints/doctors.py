@@ -82,7 +82,7 @@ async def read_doctor_reviews(
     """
     Retrieve reviews for a specific doctor.
     """
-    reviews = await crud.review.get_multi_by_doctor(
+    reviews = await crud.doctor.review.get_multi_by_doctor(
         db, doctor_id=doctor_id, skip=skip, limit=limit
     )
     return StandardResponse(data=reviews, message="Doctor reviews retrieved successfully.")
@@ -98,7 +98,7 @@ async def create_doctor_review(
     """
     Create a new review for a doctor.
     """
-    existing_review = await crud.review.get_by_patient_and_doctor(
+    existing_review = await crud.doctor.review.get_by_patient_and_doctor(
         db, patient_id=current_patient.id, doctor_id=doctor_id
     )
     if existing_review:
@@ -107,5 +107,5 @@ async def create_doctor_review(
     review_create = schemas.ReviewCreate(
         **review_in.model_dump(), patient_id=current_patient.id, doctor_id=doctor_id
     )
-    review = await crud.review.create(db, obj_in=review_create)
+    review = await crud.doctor.review.create(db, obj_in=review_create)
     return StandardResponse(data=review, message="Review created successfully.")

@@ -17,7 +17,12 @@ from .review import ReviewCreateForPatient, ReviewCreate
 from .ai import Report, ReportSummary, SoapNoteGenerationResponse, AIModelBase, AIModelCreate, AIModel
 from .ai_features import ReportAnalysisRequest, ReportAnalysisResponse, SymptomCheckerRequest, SymptomCheckerResponse, AllergyCheckerRequest, AllergyCheckerResponse, CalorieCheckerRequest, CalorieCheckerResponse
 from .symptom import SymptomBase, SymptomCreate, SymptomUpdate, Symptom
+from .schedule import ScheduleBase, ScheduleCreate, Schedule
+from .vital import Vital, VitalCreate, VitalUpdate
 
-Doctor.model_rebuild()
+Schedule.model_rebuild()
 Appointment.model_rebuild()
+Review.model_rebuild()
 Patient.model_rebuild()
+Doctor.model_rebuild()
+Vital.model_rebuild()
