@@ -21,9 +21,6 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-
-update_forward_refs()
-
 scheduler = AsyncIOScheduler()
 
 def initialize_database():
@@ -35,6 +32,7 @@ def initialize_database():
 
 @app.on_event("startup")
 async def startup_event():
+    update_forward_refs()
     initialize_database()
     scheduler.add_job(cleanup_old_appointments, 'interval', days=1)
     scheduler.add_job(cleanup_old_notifications, 'interval', days=1)
