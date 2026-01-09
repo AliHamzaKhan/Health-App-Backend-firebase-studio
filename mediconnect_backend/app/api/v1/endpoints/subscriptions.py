@@ -15,7 +15,7 @@ async def create_subscription(
     *,
     db: AsyncSession = Depends(deps.get_db),
     subscription_in: SubscriptionCreate,
-    current_user: User = Depends(deps.get_current_active_admin),
+    # current_user: User = Depends(deps.get_current_active_admin),
 ):
     """
     Create new subscription.
@@ -61,7 +61,7 @@ async def update_subscription(
     db: AsyncSession = Depends(deps.get_db),
     subscription_id: int,
     subscription_in: SubscriptionUpdate,
-    current_user: User = Depends(deps.get_current_active_admin),
+    # current_user: User = Depends(deps.get_current_active_admin),
 ):
     """
     Update a subscription.
@@ -78,7 +78,7 @@ async def delete_subscription(
     *,
     db: AsyncSession = Depends(deps.get_db),
     subscription_id: int,
-    current_user: User = Depends(deps.get_current_active_admin),
+    # current_user: User = Depends(deps.get_current_active_admin),
 ):
     """
     Delete a subscription.

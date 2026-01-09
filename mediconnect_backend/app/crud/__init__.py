@@ -12,3 +12,5 @@ from .crud_subscription import subscription
 from .crud_permissions import permission
 from .crud_symptom import symptom
 from .crud_vital import vital
+from .crud_allergy import crud_allergy
+from .crud_permissions import permission

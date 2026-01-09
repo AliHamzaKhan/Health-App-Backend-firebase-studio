@@ -19,6 +19,8 @@ from .ai_features import ReportAnalysisRequest, ReportAnalysisResponse, SymptomC
 from .symptom import SymptomBase, SymptomCreate, SymptomUpdate, Symptom
 from .schedule import ScheduleBase, ScheduleCreate, Schedule
 from .vital import Vital, VitalCreate, VitalUpdate
+from .allergy import Allergy, AllergyCreate, AllergyUpdate
+from .calorie import Calorie, CalorieCreate, CalorieUpdate
 
 Schedule.model_rebuild()
 Appointment.model_rebuild()

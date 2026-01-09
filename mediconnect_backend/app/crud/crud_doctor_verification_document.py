@@ -1,0 +1,8 @@
+from app.crud.base import CRUDBase
+from app.models import DoctorVerificationDocument
+from app.schemas.doctor import DoctorVerificationDocument as DoctorVerificationDocumentSchema
+
+class CRUDDoctorVerificationDocument(CRUDBase[DoctorVerificationDocument, DoctorVerificationDocumentSchema, DoctorVerificationDocumentSchema]):
+    pass
+
+crud_doctor_verification_document = CRUDDoctorVerificationDocument(DoctorVerificationDocument)

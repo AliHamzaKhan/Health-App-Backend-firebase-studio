@@ -1,4 +1,3 @@
-
 from .appointment import Appointment
 from .consultation import Consultation
 from .doctor import Doctor
@@ -9,18 +8,6 @@ from .schedule import Schedule
 
 
 def update_forward_refs():
-    Doctor.update_forward_refs(
-        Appointment=Appointment, Review=Review, Schedule=Schedule
-    )
-    Patient.update_forward_refs(
-        Appointment=Appointment,
-        Review=Review,
-        Notification=Notification,
-        Consultation=Consultation,
-    )
-    Appointment.update_forward_refs(
-        Doctor=Doctor,
-        Patient=Patient,
-        Consultation=Consultation,
-        Review=Review,
-    )
+    Doctor.model_rebuild()
+    Patient.model_rebuild()
+    Appointment.model_rebuild()

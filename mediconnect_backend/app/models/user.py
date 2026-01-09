@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String
+from sqlalchemy import Boolean, Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
@@ -12,14 +12,19 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean(), default=True)
     is_superuser = Column(Boolean(), default=False)
-    role = Column(String(50), nullable=False)
     profile_pic = Column(String(255), nullable=True)
     phone = Column(String(20), nullable=True)
     status = Column(String(20), default="active")
     token_balance = Column(Integer, default=0)
 
+    role_id = Column(Integer, ForeignKey("roles.id"))
+    role = relationship("Role")
+
+    allergies = relationship("Allergy", back_populates="user")
+    medical_conditions = relationship("MedicalCondition", back_populates="user")
+
     doctor_profile = relationship("Doctor", back_populates="user", uselist=False)
     patient_profile = relationship("Patient", back_populates="user", uselist=False)
 
     transactions = relationship("Transaction", back_populates="user")
-    notifications = relationship("Notification", back_populates="user")  # ✅ added
+    notifications = relationship("Notification", back_populates="user")

@@ -1,51 +1,40 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional, List, TYPE_CHECKING
+from pydantic import BaseModel
+from typing import Optional, List
+from app.schemas.user import User
 
-if TYPE_CHECKING:
-    from app.schemas.schedule import Schedule
-    from app.schemas.appointment import Appointment
-    from app.schemas.review import Review
-
-# Shared properties
 class DoctorBase(BaseModel):
-    name: str
-    email: str
-    specialty: str
-    phone_number: Optional[str] = None
-    is_active: bool = True
-    photo_url: Optional[str] = None
+    specialization: Optional[str] = None
+    years_of_experience: Optional[int] = None
+    bio: Optional[str] = None
+    office_address: Optional[str] = None
+    office_hours: Optional[str] = None
 
-
-# Properties to receive on doctor creation
 class DoctorCreate(DoctorBase):
     pass
 
-
-# Properties to receive on doctor update
 class DoctorUpdate(DoctorBase):
     pass
 
-
-# Properties shared by models stored in DB
 class DoctorInDBBase(DoctorBase):
     id: int
-    appointments: List['Appointment'] = []
-    reviews: List['Review'] = []
-    schedules: List['Schedule'] = []
-    model_config = ConfigDict(from_attributes=True)
+    user_id: int
 
+    class Config:
+        from_attributes = True
 
-# Properties to return to client
 class Doctor(DoctorInDBBase):
     pass
 
+class DoctorVerificationDocument(BaseModel):
+    id: int
+    doctor_id: int
+    document_type: str
+    document_url: str
+    is_verified: bool
 
-# Properties stored in DB
-class DoctorInDB(DoctorInDBBase):
-    pass
+    class Config:
+        from_attributes = True
 
-
-class DoctorDashboardStats(BaseModel):
-    total_patients: int
-    upcoming_appointments: int
-    total_revenue: float
+class DoctorWithVerificationInfo(Doctor):
+    user: User
+    verification_documents: List[DoctorVerificationDocument]

@@ -1,90 +1,119 @@
-from fastapi import APIRouter, Depends, Query, UploadFile, File
-from typing import Optional, List, Any
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-import pandas as pd
+from typing import List, Any, Optional
 import io
-from starlette.responses import StreamingResponse
+import pandas as pd
+from fastapi.responses import StreamingResponse
 
 from app.api.v1 import deps
-from app.api.v1.deps import get_current_active_admin
+from app import crud
+from app.schemas.response import StandardResponse
+from app.schemas.hospital import Hospital, HospitalCreate, HospitalUpdate
+from app.schemas.doctor import DoctorWithVerificationInfo
+from app.schemas.user import User, UserUpdate
+from app.schemas.medication import Medication, MedicationCreate, MedicationUpdate
+from app.schemas.notification import NotificationBroadcast, NotificationCreate
 from app.crud.crud_user import crud_user
-from app.crud.crud_hospital import hospital as crud_hospital
+from app.crud.crud_hospital import crud_hospital
 from app.crud.crud_medication import crud_medication
 from app.crud.crud_notification import crud_notification
 from app.crud.crud_transaction import crud_transaction
-from app.crud import crud_doctor
-from app.models.doctor import Doctor
-from app.models.user import User
-from app.models.hospital import Hospital
-from app.models.medication import Medication
-from app.schemas.doctor import DoctorUpdate
-from app.schemas.user import UserUpdate
-from app.schemas.hospital import HospitalCreate, HospitalUpdate
-from app.schemas.medication import MedicationCreate, MedicationUpdate
-from app.schemas.notification import NotificationCreate, NotificationBroadcast
-from app.schemas.response import StandardResponse
+from app.crud.crud_doctor import crud_doctor
+from app.crud.crud_doctor_verification_document import crud_doctor_verification_document
+from app.core.security import get_current_active_admin
 
 router = APIRouter()
 
-
-@router.get("/dashboard-stats", response_model=StandardResponse[Any])
-async def get_dashboard_stats(
-        db: AsyncSession = Depends(deps.get_db),
-        current_user=Depends(get_current_active_admin)
+@router.get("/hospitals", response_model=StandardResponse[List[Hospital]])
+async def get_hospitals(
+    db: AsyncSession = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
 ):
     """
-    Fetches all key performance indicators (KPIs) and recent data needed for the main dashboard view.
+    Retrieve a list of hospitals.
     """
-    total_users = await crud_user.count(db)
-    total_doctors = await crud_doctor.doctor.count(db)
-    pending_doctor_approvals = await crud_doctor.doctor.count_doctors_by_status(db, status="pending")
-    total_hospitals = await crud_hospital.count(db)
-    recent_doctor_applications = await crud_doctor.doctor.get_doctors_by_status(db, status="pending", limit=5)
-    total_revenue = await crud_transaction.get_total_revenue(db)
-    revenue_chart_data = await crud_transaction.get_revenue_by_month(db)
+    hospitals = await crud_hospital.get_multi(db, skip=skip, limit=limit)
+    return StandardResponse(data=hospitals)
 
-    data = {
-        "stats": {
-            "totalUsers": total_users,
-            "totalDoctors": total_doctors,
-            "pendingDoctorApprovals": pending_doctor_approvals,
-            "totalHospitals": total_hospitals,
-            "totalRevenue": total_revenue
-        },
-        "revenueChartData": revenue_chart_data,
-        "recentDoctorApplications": recent_doctor_applications
-    }
-    return StandardResponse(data=data, message="Dashboard stats retrieved successfully.")
-
-
-@router.get("/doctor-applications", response_model=StandardResponse[Any])
-async def get_doctor_applications(status: Optional[str] = Query("pending", enum=["pending", "approved", "rejected"]),
-                                  db: AsyncSession = Depends(deps.get_db),
-                                  current_user=Depends(get_current_active_admin)):
-    """
-    Retrieves a list of doctor applications, with filtering capabilities.
-    """
-    applications = await crud_doctor.get_doctors_by_status(db, status=status)
-    return StandardResponse(data={"applications": applications}, message="Doctor applications retrieved successfully.")
-
-
-@router.patch("/doctor-applications/{app_id}", response_model=StandardResponse[Doctor])
-async def update_doctor_application(
-        app_id: int,
-        status_update: DoctorUpdate,
-        db: AsyncSession = Depends(deps.get_db),
-        current_user=Depends(get_current_active_admin)
+@router.post("/hospitals", response_model=StandardResponse[Hospital])
+async def create_hospital(
+    *, 
+    db: AsyncSession = Depends(deps.get_db), 
+    hospital_in: HospitalCreate
 ):
     """
-    Approves or rejects a specific doctor's application.
+    Create a new hospital.
     """
-    application = await crud_doctor.get(db, id=app_id)
-    if not application:
-        return StandardResponse(success=False, message="Doctor application not found", data=None)
+    hospital = await crud_hospital.create(db, obj_in=hospital_in)
+    return StandardResponse(data=hospital, message="Hospital created successfully")
 
-    updated_application = await crud_doctor.doctor.update(db, db_obj=application, obj_in=status_update)
-    return StandardResponse(data=updated_application, message="Doctor application updated successfully.")
+@router.put("/hospitals/{hospital_id}", response_model=StandardResponse[Hospital])
+async def update_hospital(
+    *, 
+    db: AsyncSession = Depends(deps.get_db), 
+    hospital_id: int, 
+    hospital_in: HospitalUpdate
+):
+    """
+    Update a hospital.
+    """
+    hospital = await crud_hospital.get(db, id=hospital_id)
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+    hospital = await crud_hospital.update(db, db_obj=hospital, obj_in=hospital_in)
+    return StandardResponse(data=hospital, message="Hospital updated successfully")
 
+@router.delete("/hospitals/{hospital_id}", response_model=StandardResponse[Hospital])
+async def delete_hospital(
+    *, 
+    db: AsyncSession = Depends(deps.get_db), 
+    hospital_id: int
+):
+    """
+    Delete a hospital.
+    """
+    hospital = await crud_hospital.get(db, id=hospital_id)
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+    hospital = await crud_hospital.remove(db, id=hospital_id)
+    return StandardResponse(data=hospital, message="Hospital deleted successfully")
+
+@router.get("/unverified-doctors", response_model=StandardResponse[List[DoctorWithVerificationInfo]])
+async def get_unverified_doctors(
+    db: AsyncSession = Depends(deps.get_db),
+):
+    """
+    Get a list of unverified doctors with their documents.
+    """
+    doctors = await crud_doctor.get_unverified_doctors_with_documents(db)
+    return StandardResponse(data=doctors)
+
+@router.put("/verify-doctor/{doctor_id}", response_model=StandardResponse[User])
+async def verify_doctor(
+    doctor_id: int,
+    db: AsyncSession = Depends(deps.get_db),
+):
+    """
+    Verify a doctor and update their status.
+    """
+    doctor = await crud_doctor.get(db, id=doctor_id)
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    user_to_update = await crud_user.get(db, id=doctor.user_id)
+    if not user_to_update:
+        raise HTTPException(status_code=404, detail="User associated with doctor not found")
+
+    # Update user status
+    updated_user = await crud_user.update(db, db_obj=user_to_update, obj_in={"status": 1, "is_active": True})
+
+    # Update verification documents
+    if doctor.verification_documents:
+        for doc in doctor.verification_documents:
+            await crud_doctor_verification_document.update(db, db_obj=doc, obj_in={"is_verified": True})
+
+    return StandardResponse(data=updated_user, message="Doctor verified successfully.")
 
 @router.get("/users", response_model=StandardResponse[Any])
 async def get_users(search: Optional[str] = None, role: Optional[str] = None, page: int = 1, size: int = 10,
@@ -102,6 +131,7 @@ async def get_users(search: Optional[str] = None, role: Optional[str] = None, pa
     total_users = await crud_user.count(db)
     data = {"total": total_users, "page": page, "size": size, "users": users}
     return StandardResponse(data=data, message="Users retrieved successfully.")
+
 
 
 @router.patch("/users/{user_id}", response_model=StandardResponse[User])
@@ -128,52 +158,6 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(deps.get_db),
         return StandardResponse(success=False, message="User not found")
     await crud_user.remove(db, id=user_id)
     return StandardResponse(message="User deleted successfully.")
-
-
-@router.get("/hospitals", response_model=StandardResponse[List[Hospital]])
-async def get_hospitals(db: AsyncSession = Depends(deps.get_db), current_user=Depends(get_current_active_admin)):
-    """
-    Lists all hospitals.
-    """
-    hospitals = await crud_hospital.get_multi(db)
-    return StandardResponse(data=hospitals, message="Hospitals retrieved successfully.")
-
-
-@router.post("/hospitals", response_model=StandardResponse[Hospital])
-async def create_hospital(hospital: HospitalCreate, db: AsyncSession = Depends(deps.get_db),
-                          current_user=Depends(get_current_active_admin)):
-    """
-    Creates a new hospital.
-    """
-    new_hospital = await crud_hospital.create(db, obj_in=hospital)
-    return StandardResponse(data=new_hospital, message="Hospital created successfully.")
-
-
-@router.put("/hospitals/{hospital_id}", response_model=StandardResponse[Hospital])
-async def update_hospital(hospital_id: int, hospital: HospitalUpdate, db: AsyncSession = Depends(deps.get_db),
-                          current_user=Depends(get_current_active_admin)):
-    """
-    Updates a hospital.
-    """
-    db_hospital = await crud_hospital.get(db, id=hospital.hospital__id)
-    if not db_hospital:
-        return StandardResponse(success=False, message="Hospital not found")
-    updated_hospital = await crud_hospital.update(db, db_obj=db_hospital, obj_in=hospital)
-    return StandardResponse(data=updated_hospital, message="Hospital updated successfully.")
-
-
-@router.delete("/hospitals/{hospital_id}", response_model=StandardResponse[Any])
-async def delete_hospital(hospital_id: int, db: AsyncSession = Depends(deps.get_db),
-                          current_user=Depends(get_current_active_admin)):
-    """
-    Deletes a hospital.
-    """
-    hospital = await crud_hospital.get(db, id=hospital_id)
-    if not hospital:
-        return StandardResponse(success=False, message="Hospital not found")
-    await crud_hospital.remove(db, id=hospital_id)
-    return StandardResponse(message="Hospital deleted successfully.")
-
 
 @router.post("/hospitals/import", response_model=StandardResponse[Any])
 async def import_hospitals(file: UploadFile = File(...), db: AsyncSession = Depends(deps.get_db),
@@ -256,12 +240,11 @@ async def delete_medication(medication_id: int, db: AsyncSession = Depends(deps.
     """
     Deletes a medication entry.
     """
-    medication = await crud_medication.get(db, id=medication_id)
+    medication = await crud_medication.get(db, id=.medication_id)
     if not medication:
         return StandardResponse(success=False, message="Medication not found")
     await crud_medication.remove(db, id=medication_id)
     return StandardResponse(message="Medication deleted successfully.")
-
 
 @router.get("/medications/export-template")
 async def export_medications_template(current_user=Depends(get_current_active_admin)):
@@ -336,3 +319,34 @@ async def get_income_transactions(page: int = 1, size: int = 10, db: AsyncSessio
     total_transactions = await crud_transaction.count(db)
     data = {"total": total_transactions, "page": page, "size": size, "transactions": transactions}
     return StandardResponse(data=data, message="Income transactions retrieved successfully.")
+    
+            
+
+@router.get("/dashboard-stats", response_model=StandardResponse[Any])
+async def get_dashboard_stats(
+        db: AsyncSession = Depends(deps.get_db),
+        current_user=Depends(get_current_active_admin)
+):
+    """
+    Fetches all key performance indicators (KPIs) and recent data needed for the main dashboard view.
+    """
+    total_users = await crud_user.count(db)
+    total_doctors = await crud_doctor.count(db)
+    pending_doctor_approvals = await crud_doctor.count_doctors_by_status(db, status="pending")
+    total_hospitals = await crud_hospital.count(db)
+    recent_doctor_applications = await crud_doctor.get_doctors_by_status(db, status="pending", limit=5)
+    total_revenue = await crud_transaction.get_total_revenue(db)
+    revenue_chart_data = await crud_transaction.get_revenue_by_month(db)
+
+    data = {
+        "stats": {
+            "totalUsers": total_users,
+            "totalDoctors": total_doctors,
+            "pendingDoctorApprovals": pending_doctor_approvals,
+            "totalHospitals": total_hospitals,
+            "totalRevenue": total_revenue
+        },
+        "revenueChartData": revenue_chart_data,
+        "recentDoctorApplications": recent_doctor_applications
+    }
+    return StandardResponse(data=data, message="Dashboard stats retrieved successfully.")

@@ -24,26 +24,6 @@ def read_users(
     return StandardResponse(data=users, message="Users retrieved successfully.")
 
 
-@router.post("/", response_model=StandardResponse[schemas.User])
-def create_user(
-    *,
-    db: Session = Depends(deps.get_db),
-    user_in: schemas.UserCreate,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Create new user.
-    """
-    user = crud.crud_user.get_by_email(db, email=user_in.email)
-    if user:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this username already exists in the system.",
-        )
-    user = crud.crud_user.create(db, obj_in=user_in)
-    return StandardResponse(data=user, message="User created successfully.")
-
-
 @router.put("/me", response_model=StandardResponse[schemas.User])
 def update_user_me(
     *,
