@@ -12,6 +12,7 @@ from app.db.session import SessionLocal
 from app.db.init_db import init_db
 from app.cleanup import cleanup_old_appointments, cleanup_old_notifications
 from app.reminders import send_appointment_reminders
+from app.schemas.update_forward_refs import update_forward_refs
 
 settings = get_settings()
 
@@ -19,6 +20,9 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+
+update_forward_refs()
 
 scheduler = AsyncIOScheduler()
 
