@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud, models, schemas
 from app.api.v1 import deps
 import json
 from typing import Any, List, Optional
+from app.schemas.response import StandardResponse
 
 router = APIRouter()
 
 
-@router.post("/seed_permissions/", status_code=201)
+@router.post("/seed_permissions/", status_code=201, response_model=StandardResponse)
 async def seed_permissions(db: AsyncSession = Depends(deps.get_db),
                            # current_user: models.User = Depends(deps.get_current_active_superuser)
                            ):
@@ -19,10 +20,10 @@ async def seed_permissions(db: AsyncSession = Depends(deps.get_db),
         permission_in = schemas.RolePermissionCreate(role=role, permissions=permissions)
         await crud.permission.create(db=db, obj_in=permission_in)
 
-    return {"message": "Permissions seeded successfully"}
+    return StandardResponse(message="Permissions seeded successfully")
 
 
-@router.get("/", response_model=List[schemas.Permission])
+@router.get("/", response_model=StandardResponse[List[schemas.Permission]])
 async def read_permissions(
         db: AsyncSession = Depends(deps.get_db),
         skip: int = 0,
@@ -39,10 +40,10 @@ async def read_permissions(
         )
     else:
         permissions = await crud.permission.get_multi(db, skip=skip, limit=limit)
-    return permissions
+    return StandardResponse(data=permissions, message="Permissions retrieved successfully.")
 
 
-@router.post("/", response_model=schemas.Permission)
+@router.post("/", response_model=StandardResponse[schemas.Permission])
 async def create_permission(
         *,
         db: AsyncSession = Depends(deps.get_db),
@@ -53,10 +54,10 @@ async def create_permission(
     Create new permission.
     """
     permission = await crud.permission.create(db=db, obj_in=permission_in)
-    return permission
+    return StandardResponse(data=permission, message="Permission created successfully.")
 
 
-@router.get("/{id}", response_model=schemas.Permission)
+@router.get("/{id}", response_model=StandardResponse[schemas.Permission])
 async def read_permission(
         *,
         db: AsyncSession = Depends(deps.get_db),
@@ -68,11 +69,11 @@ async def read_permission(
     """
     permission = await crud.permission.get(db=db, id=id)
     if not permission:
-        raise HTTPException(status_code=404, detail="Permission not found")
-    return permission
+        return StandardResponse(success=False, message="Permission not found")
+    return StandardResponse(data=permission, message="Permission retrieved successfully.")
 
 
-@router.put("/{id}", response_model=schemas.Permission)
+@router.put("/{id}", response_model=StandardResponse[schemas.Permission])
 async def update_permission(
         *,
         db: AsyncSession = Depends(deps.get_db),
@@ -85,6 +86,6 @@ async def update_permission(
     """
     permission = await crud.permission.get(db=db, id=id)
     if not permission:
-        raise HTTPException(status_code=404, detail="Permission not found")
+        return StandardResponse(success=False, message="Permission not found")
     permission = await crud.permission.update(db=db, db_obj=permission, obj_in=permission_in)
-    return permission
+    return StandardResponse(data=permission, message="Permission updated successfully.")

@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import Any, List
 
 from app import crud
 from app.api import deps
 from app.schemas.medication import Medication, MedicationCreate, MedicationUpdate
+from app.schemas.response import StandardResponse
 
 router = APIRouter()
 
-@router.get("/", response_model=List[Medication])
+@router.get("/", response_model=StandardResponse[List[Medication]])
 def read_medications(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
@@ -18,9 +19,9 @@ def read_medications(
     Retrieve medications.
     """
     medications = crud.crud_medication.get_multi(db, skip=skip, limit=limit)
-    return medications
+    return StandardResponse(data=medications, message="Medications retrieved successfully.")
 
-@router.post("/", response_model=Medication)
+@router.post("/", response_model=StandardResponse[Medication])
 def create_medicine(
     *,
     db: Session = Depends(deps.get_db),
@@ -30,9 +31,9 @@ def create_medicine(
     Create new medicine.
     """
     medicine = crud.crud_medication.create(db, obj_in=medicine_in)
-    return medicine
+    return StandardResponse(data=medicine, message="Medication created successfully.")
 
-@router.put("/{id}", response_model=Medication)
+@router.put("/{id}", response_model=StandardResponse[Medication])
 def update_medicine(
     *,
     db: Session = Depends(deps.get_db),
@@ -44,11 +45,11 @@ def update_medicine(
     """
     medicine = crud.crud_medication.get(db, id=id)
     if not medicine:
-        raise HTTPException(status_code=404, detail="Medicine not found")
+        return StandardResponse(success=False, message="Medication not found")
     medicine = crud.crud_medication.update(db, db_obj=medicine, obj_in=medicine_in)
-    return medicine
+    return StandardResponse(data=medicine, message="Medication updated successfully.")
 
-@router.get("/{id}", response_model=Medication)
+@router.get("/{id}", response_model=StandardResponse[Medication])
 def read_medicine(
     *,
     db: Session = Depends(deps.get_db),
@@ -59,10 +60,10 @@ def read_medicine(
     """
     medicine = crud.crud_medication.get(db, id=id)
     if not medicine:
-        raise HTTPException(status_code=404, detail="Medicine not found")
-    return medicine
+        return StandardResponse(success=False, message="Medication not found")
+    return StandardResponse(data=medicine, message="Medication retrieved successfully.")
 
-@router.delete("/{id}", response_model=Medication)
+@router.delete("/{id}", response_model=StandardResponse[Medication])
 def delete_medicine(
     *,
     db: Session = Depends(deps.get_db),
@@ -73,6 +74,6 @@ def delete_medicine(
     """
     medicine = crud.crud_medication.get(db, id=id)
     if not medicine:
-        raise HTTPException(status_code=404, detail="Medicine not found")
+        return StandardResponse(success=False, message="Medication not found")
     medicine = crud.crud_medication.remove(db, id=id)
-    return medicine
+    return StandardResponse(data=medicine, message="Medication deleted successfully.")

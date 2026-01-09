@@ -1,17 +1,18 @@
 
 from typing import Any, List
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
 from app.schemas.subscription import SubscriptionPurchase
+from app.schemas.response import StandardResponse
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[schemas.Patient])
+@router.get("/", response_model=StandardResponse[List[schemas.Patient]])
 def read_patients(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
@@ -23,12 +24,12 @@ def read_patients(
     """
     if crud.user.is_superuser(current_user):
         patients = crud.patient.get_multi(db, skip=skip, limit=limit)
+        return StandardResponse(data=patients, message="Patients retrieved successfully.")
     else:
-        raise HTTPException(status_code=400, detail="Not enough permissions")
-    return patients
+        return StandardResponse(success=False, message="Not enough permissions")
 
 
-@router.post("/register", response_model=schemas.Patient)
+@router.post("/register", response_model=StandardResponse[schemas.Patient])
 def register_patient(
     *,
     db: Session = Depends(deps.get_db),
@@ -39,15 +40,12 @@ def register_patient(
     """
     patient = crud.patient.get_by_email(db, email=patient_in.email)
     if patient:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this username already exists in the system.",
-        )
+        return StandardResponse(success=False, message="The user with this username already exists in the system.")
     patient = crud.patient.create(db, obj_in=patient_in)
-    return patient
+    return StandardResponse(data=patient, message="Patient registered successfully.")
 
 
-@router.post("/", response_model=schemas.Patient)
+@router.post("/", response_model=StandardResponse[schemas.Patient])
 def create_patient(
     *,
     db: Session = Depends(deps.get_db),
@@ -58,18 +56,15 @@ def create_patient(
     Create new patient.
     """
     if not crud.user.is_superuser(current_user):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+        return StandardResponse(success=False, message="Not enough permissions")
     patient = crud.patient.get_by_email(db, email=patient_in.email)
     if patient:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this username already exists in the system.",
-        )
+        return StandardResponse(success=False, message="The user with this username already exists in the system.")
     patient = crud.patient.create(db, obj_in=patient_in)
-    return patient
+    return StandardResponse(data=patient, message="Patient created successfully.")
 
 
-@router.put("/{id}", response_model=schemas.Patient)
+@router.put("/{id}", response_model=StandardResponse[schemas.Patient])
 def update_patient(
     *,
     db: Session = Depends(deps.get_db),
@@ -82,15 +77,12 @@ def update_patient(
     """
     patient = crud.patient.get(db, id=id)
     if not patient:
-        raise HTTPException(
-            status_code=404,
-            detail="The user with this username does not exist in the system",
-        )
+        return StandardResponse(success=False, message="The user with this username does not exist in the system")
     patient = crud.patient.update(db, db_obj=patient, obj_in=patient_in)
-    return patient
+    return StandardResponse(data=patient, message="Patient updated successfully.")
 
 
-@router.get("/{id}", response_model=schemas.Patient)
+@router.get("/{id}", response_model=StandardResponse[schemas.Patient])
 def read_patient_by_id(
     id: int,
     current_user: models.User = Depends(deps.get_current_active_user),
@@ -101,11 +93,11 @@ def read_patient_by_id(
     """
     patient = crud.patient.get(db, id=id)
     if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-    return patient
+        return StandardResponse(success=False, message="Patient not found")
+    return StandardResponse(data=patient, message="Patient retrieved successfully.")
 
 
-@router.get("/me/tokens", response_model=int)
+@router.get("/me/tokens", response_model=StandardResponse[int])
 def read_patient_tokens(
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
@@ -113,19 +105,20 @@ def read_patient_tokens(
     Get current token count.
     """
     # This is a mock response
-    return 10
+    return StandardResponse(data=10, message="Tokens retrieved successfully.")
 
 
-@router.get("/subscriptions/plans", response_model=List[dict])
+@router.get("/subscriptions/plans", response_model=StandardResponse[List[dict]])
 def read_subscription_plans() -> Any:
     """
     Get all subscription plans.
     """
     # This is a mock response
-    return [
+    plans = [
         {"id": "plan_1", "name": "Basic", "price": 10},
         {"id": "plan_2", "name": "Premium", "price": 20},
     ]
+    return StandardResponse(data=plans, message="Subscription plans retrieved successfully.")
 
 
 @router.post("/subscriptions/purchase")
@@ -139,10 +132,11 @@ def purchase_subscription(
     Purchase a subscription or a token package.
     """
     # This is a mock response
-    return {"status": "success", "message": f"Purchased {purchase_in.type} with id {purchase_in.planId}"}
+    response_data = {"status": "success", "message": f"Purchased {purchase_in.type} with id {purchase_in.planId}"}
+    return StandardResponse(data=response_data, message="Purchase successful.")
 
 
-@router.get("/me/subscription", response_model=dict)
+@router.get("/me/subscription", response_model=StandardResponse[dict])
 def read_patient_subscription(
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
@@ -150,10 +144,11 @@ def read_patient_subscription(
     Get current subscription.
     """
     # This is a mock response
-    return {"id": "sub_1", "plan_id": "plan_1", "status": "active"}
+    subscription_data = {"id": "sub_1", "plan_id": "plan_1", "status": "active"}
+    return StandardResponse(data=subscription_data, message="Subscription retrieved successfully.")
 
 
-@router.get("/me/appointments", response_model=List[schemas.Appointment])
+@router.get("/me/appointments", response_model=StandardResponse[List[schemas.Appointment]])
 def get_patient_appointments(
     db: Session = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_active_user),
@@ -165,10 +160,10 @@ def get_patient_appointments(
     appointments = crud.appointment.get_multi_by_patient(
         db, patient_id=current_user.id, status=status
     )
-    return appointments
+    return StandardResponse(data=appointments, message="Appointments retrieved successfully.")
 
 
-@router.post("/me/appointments", response_model=schemas.Appointment)
+@router.post("/me/appointments", response_model=StandardResponse[schemas.Appointment])
 def book_appointment(
     *,
     db: Session = Depends(deps.get_db),
@@ -181,10 +176,10 @@ def book_appointment(
     appointment = crud.appointment.create_with_patient(
         db, obj_in=appointment_in, patient_id=current_user.id
     )
-    return appointment
+    return StandardResponse(data=appointment, message="Appointment booked successfully.")
 
 
-@router.get("/me/appointments/{appointment_id}", response_model=schemas.Appointment)
+@router.get("/me/appointments/{appointment_id}", response_model=StandardResponse[schemas.Appointment])
 def get_patient_appointment(
     appointment_id: int,
     db: Session = Depends(deps.get_db),
@@ -195,11 +190,11 @@ def get_patient_appointment(
     """
     appointment = crud.appointment.get(db, id=appointment_id)
     if not appointment or appointment.patient_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Appointment not found")
-    return appointment
+        return StandardResponse(success=False, message="Appointment not found")
+    return StandardResponse(data=appointment, message="Appointment retrieved successfully.")
 
 
-@router.patch("/me/appointments/{appointment_id}", response_model=schemas.Appointment)
+@router.patch("/me/appointments/{appointment_id}", response_model=StandardResponse[schemas.Appointment])
 def cancel_appointment(
     appointment_id: int,
     db: Session = Depends(deps.get_db),
@@ -210,11 +205,11 @@ def cancel_appointment(
     """
     appointment = crud.appointment.get(db, id=appointment_id)
     if not appointment or appointment.patient_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Appointment not found")
+        return StandardResponse(success=False, message="Appointment not found")
 
     if appointment.status != "UPCOMING":
-        raise HTTPException(status_code=400, detail="Only upcoming appointments can be cancelled")
+        return StandardResponse(success=False, message="Only upcoming appointments can be cancelled")
 
     appointment_in = schemas.AppointmentUpdate(status="CANCELLED")
     appointment = crud.appointment.update(db, db_obj=appointment, obj_in=appointment_in)
-    return appointment
+    return StandardResponse(data=appointment, message="Appointment cancelled successfully.")

@@ -14,6 +14,9 @@ from .soap import SoapNote, SoapNoteCreate
 from .subscription import Subscription, SubscriptionPurchase
 from .permission import Permission,PermissionBase,PermissionCreate, PermissionUpdate,RolePermissionCreate
 from .review import ReviewCreateForPatient, ReviewCreate
+from .ai import Report, ReportSummary, SoapNoteGenerationResponse, AIModelBase, AIModelCreate, AIModel
+from .ai_features import ReportAnalysisRequest, ReportAnalysisResponse, SymptomCheckerRequest, SymptomCheckerResponse, AllergyCheckerRequest, AllergyCheckerResponse, CalorieCheckerRequest, CalorieCheckerResponse
+from .symptom import SymptomBase, SymptomCreate, SymptomUpdate, Symptom
 
 Doctor.model_rebuild()
 Appointment.model_rebuild()

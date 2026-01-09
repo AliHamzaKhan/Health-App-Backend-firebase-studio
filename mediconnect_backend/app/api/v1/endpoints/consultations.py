@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.api.v1 import deps
 from app.crud import crud_consultation
 from app.schemas.consultation import Consultation, ConsultationCreate, ConsultationUpdate
+from app.schemas.response import StandardResponse
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[Consultation])
+@router.get("/", response_model=StandardResponse[List[Consultation]])
 async def read_consultations(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
@@ -19,24 +20,24 @@ async def read_consultations(
     Retrieve consultations.
     """
     consultations = await crud_consultation.get_multi(db, skip=skip, limit=limit)
-    return consultations
+    return StandardResponse(data=consultations, message="Consultations retrieved successfully.")
 
 
-@router.post("/", response_model=Consultation)
+@router.post("/", response_model=StandardResponse[Consultation])
 async def create_consultation(
-    *, 
-    db: AsyncSession = Depends(deps.get_db), 
+    *,
+    db: AsyncSession = Depends(deps.get_db),
     consultation_in: ConsultationCreate
 ):
     """
     Create new consultation.
     """
     consultation = await crud_consultation.create(db, obj_in=consultation_in)
-    return consultation
+    return StandardResponse(data=consultation, message="Consultation created successfully.")
 
-@router.get("/{id}", response_model=Consultation)
+@router.get("/{id}", response_model=StandardResponse[Consultation])
 async def read_consultation(
-    *, 
+    *,
     db: AsyncSession = Depends(deps.get_db),
     id: int
 ):
@@ -45,12 +46,12 @@ async def read_consultation(
     """
     consultation = await crud_consultation.get(db, id=id)
     if not consultation:
-        raise HTTPException(status_code=404, detail="Consultation not found")
-    return consultation
+        return StandardResponse(success=False, message="Consultation not found", data=None)
+    return StandardResponse(data=consultation, message="Consultation retrieved successfully.")
 
-@router.put("/{id}", response_model=Consultation)
+@router.put("/{id}", response_model=StandardResponse[Consultation])
 async def update_consultation(
-    *, 
+    *,
     db: AsyncSession = Depends(deps.get_db),
     id: int,
     consultation_in: ConsultationUpdate
@@ -60,13 +61,13 @@ async def update_consultation(
     """
     consultation = await crud_consultation.get(db, id=id)
     if not consultation:
-        raise HTTPException(status_code=404, detail="Consultation not found")
+        return StandardResponse(success=False, message="Consultation not found", data=None)
     consultation = await crud_consultation.update(db, db_obj=consultation, obj_in=consultation_in)
-    return consultation
+    return StandardResponse(data=consultation, message="Consultation updated successfully.")
 
-@router.delete("/{id}", response_model=Consultation)
+@router.delete("/{id}", response_model=StandardResponse[Consultation])
 async def delete_consultation(
-    *, 
+    *,
     db: AsyncSession = Depends(deps.get_db),
     id: int
 ):
@@ -75,6 +76,6 @@ async def delete_consultation(
     """
     consultation = await crud_consultation.get(db, id=id)
     if not consultation:
-        raise HTTPException(status_code=404, detail="Consultation not found")
+        return StandardResponse(success=False, message="Consultation not found", data=None)
     consultation = await crud_consultation.remove(db, id=id)
-    return consultation
+    return StandardResponse(data=consultation, message="Consultation deleted successfully.")

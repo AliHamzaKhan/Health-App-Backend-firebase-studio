@@ -5,6 +5,12 @@ from datetime import date, time
 from .consultation import Consultation
 from .doctor import Doctor
 from .patient import Patient
+from .review import Review
+
+Doctor = ForwardRef('Doctor')
+Patient = ForwardRef('Patient')
+Consultation = ForwardRef('Consultation')
+Review = ForwardRef('Review')
 
 # Shared properties
 class AppointmentBase(BaseModel):
@@ -31,9 +37,10 @@ class AppointmentUpdate(AppointmentBase):
 # Properties shared by models stored in DB
 class AppointmentInDBBase(AppointmentBase):
     id: int
-    doctor: 'Doctor'
-    patient: 'Patient'
-    consultation_details: Optional['Consultation'] = None
+    doctor: Doctor
+    patient: Patient
+    consultation_details: Optional[Consultation] = None
+    review: Optional[Review] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -46,3 +53,8 @@ class Appointment(AppointmentInDBBase):
 # Properties stored in DB
 class AppointmentInDB(AppointmentInDBBase):
     pass
+
+Doctor.update_forward_refs(Doctor=Doctor)
+Patient.update_forward_refs(Patient=Patient)
+Consultation.update_forward_refs(Consultation=Consultation)
+Review.update_forward_refs(Review=Review)

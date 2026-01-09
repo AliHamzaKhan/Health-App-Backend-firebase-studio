@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import (login, users, admin, appointments, consultations, transactions, reviews, notifications, patients, doctors, medications, permissions, ai)
+from app.api.v1.endpoints import (login, users, admin, appointments, consultations, transactions, reviews, notifications, patients, doctors, medications, permissions, ai, symptoms)
 
 api_router = APIRouter()
 api_router.include_router(login.router, tags=["login"])
@@ -26,3 +26,4 @@ api_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 api_router.include_router(patients.router, prefix="/patients", tags=["patients"])
 api_router.include_router(doctors.router, prefix="/doctors", tags=["doctors"])
 api_router.include_router(medications.router, prefix="/medications", tags=["medications"])
+api_router.include_router(symptoms.router, prefix="/symptoms", tags=["symptoms"])

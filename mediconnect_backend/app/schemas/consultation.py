@@ -1,7 +1,7 @@
 
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
-from .medication import PrescribedMedicine
+from .medication import PrescribedMedicine, PrescribedMedicineCreate
 
 # Shared properties
 class ConsultationBase(BaseModel):
@@ -15,7 +15,7 @@ class ConsultationBase(BaseModel):
 
 # Properties to receive on consultation creation
 class ConsultationCreate(ConsultationBase):
-    prescribed_medicines: Optional[List[str]] = []
+    prescribed_medicines: Optional[List[PrescribedMedicineCreate]] = []
 
 # Properties to receive on consultation update
 class ConsultationUpdate(ConsultationBase):

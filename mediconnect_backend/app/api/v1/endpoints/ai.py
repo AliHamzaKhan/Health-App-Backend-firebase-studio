@@ -1,7 +1,7 @@
 import os
 import json
 import google.genai as genai
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, Form, Depends
 from app.schemas.ai import Report, ReportSummary, SoapNoteGenerationResponse, AIModel, AIModelCreate
 from app.schemas.ai_features import (
     ReportAnalysisRequest, ReportAnalysisResponse,
@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.crud import crud_ai
 from typing import List
+from app.schemas.response import StandardResponse
 
 # Configure the Gemini API key
 
@@ -28,7 +29,7 @@ def _upload_to_gemini(file_path: str, mime_type: str):
     print(f"Uploaded file '{file.display_name}' as: {file.uri}")
     return file
 
-@router.post("/analyze_report", response_model=ReportSummary)
+@router.post("/analyze_report", response_model=StandardResponse[ReportSummary])
 async def analyze_report(report: Report):
     """
     Analyzes a medical report using the Gemini API to generate a summary.
@@ -39,10 +40,10 @@ async def analyze_report(report: Report):
         response = model.generate_content(prompt)
         summary = response.text
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred while analyzing the report: {e}")
-    return ReportSummary(summary=summary)
+        return StandardResponse(success=False, message=f"An error occurred while analyzing the report: {e}")
+    return StandardResponse(data=ReportSummary(summary=summary), message="Report analyzed successfully.")
 
-@router.post("/generate-soap-note", response_model=SoapNoteGenerationResponse)
+@router.post("/generate-soap-note", response_model=StandardResponse[SoapNoteGenerationResponse])
 async def generate_soap_note(
     audio_file: UploadFile = File(...),
     context: str = Form(None)
@@ -51,7 +52,7 @@ async def generate_soap_note(
     Generates a SOAP note from an audio file using the Gemini API.
     """
     if not audio_file:
-        raise HTTPException(status_code=400, detail="No audio file provided.")
+        return StandardResponse(success=False, message="No audio file provided.")
 
     try:
         # Write the audio file to a temporary location
@@ -70,12 +71,12 @@ async def generate_soap_note(
         os.remove(audio_file.filename)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred while generating the SOAP note: {e}")
+        return StandardResponse(success=False, message=f"An error occurred while generating the SOAP note: {e}")
 
-    return SoapNoteGenerationResponse(generated_text=response.text)
+    return StandardResponse(data=SoapNoteGenerationResponse(generated_text=response.text), message="SOAP note generated successfully.")
 
 
-@router.post("/report-analysis", response_model=ReportAnalysisResponse)
+@router.post("/report-analysis", response_model=StandardResponse[ReportAnalysisResponse])
 async def report_analysis(request: ReportAnalysisRequest):
     """
     Analyzes a medical report using the Gemini API to provide a summary.
@@ -86,10 +87,10 @@ async def report_analysis(request: ReportAnalysisRequest):
         response = model.generate_content(prompt)
         summary = response.text
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred while analyzing the report: {e}")
-    return ReportAnalysisResponse(summary=summary)
+        return StandardResponse(success=False, message=f"An error occurred while analyzing the report: {e}")
+    return StandardResponse(data=ReportAnalysisResponse(summary=summary), message="Report analysis successful.")
 
-@router.post("/symptom-checker", response_model=SymptomCheckerResponse)
+@router.post("/symptom-checker", response_model=StandardResponse[SymptomCheckerResponse])
 async def symptom_checker(request: SymptomCheckerRequest):
     """
     Checks symptoms using the Gemini API and provides an assessment and recommended action.
@@ -102,10 +103,10 @@ async def symptom_checker(request: SymptomCheckerRequest):
         assessment = response_json.get("assessment")
         recommended_action = response_json.get("recommended_action")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred while checking symptoms: {e}")
-    return SymptomCheckerResponse(assessment=assessment, recommended_action=recommended_action)
+        return StandardResponse(success=False, message=f"An error occurred while checking symptoms: {e}")
+    return StandardResponse(data=SymptomCheckerResponse(assessment=assessment, recommended_action=recommended_action), message="Symptom check successful.")
 
-@router.post("/allergy-checker", response_model=AllergyCheckerResponse)
+@router.post("/allergy-checker", response_model=StandardResponse[AllergyCheckerResponse])
 async def allergy_checker(request: AllergyCheckerRequest):
     """
     Checks for allergies using the Gemini API and provides an assessment, confidence level, and potential allergens.
@@ -119,10 +120,10 @@ async def allergy_checker(request: AllergyCheckerRequest):
         confidence = response_json.get("confidence")
         potential_allergens = response_json.get("potential_allergens")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred while checking for allergies: {e}")
-    return AllergyCheckerResponse(is_allergy=is_allergy, confidence=confidence, potential_allergens=potential_allergens)
+        return StandardResponse(success=False, message=f"An error occurred while checking for allergies: {e}")
+    return StandardResponse(data=AllergyCheckerResponse(is_allergy=is_allergy, confidence=confidence, potential_allergens=potential_allergens), message="Allergy check successful.")
 
-@router.post("/calorie-checker", response_model=CalorieCheckerResponse)
+@router.post("/calorie-checker", response_model=StandardResponse[CalorieCheckerResponse])
 async def calorie_checker(request: CalorieCheckerRequest):
     """
     Checks the calorie count of a food item using the Gemini API.
@@ -135,10 +136,10 @@ async def calorie_checker(request: CalorieCheckerRequest):
         calories = response_json.get("calories")
         breakdown = response_json.get("breakdown")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred while checking calories: {e}")
-    return CalorieCheckerResponse(calories=calories, breakdown=breakdown)
+        return StandardResponse(success=False, message=f"An error occurred while checking calories: {e}")
+    return StandardResponse(data=CalorieCheckerResponse(calories=calories, breakdown=breakdown), message="Calorie check successful.")
 
-@router.post("/ai-models/", response_model=AIModel)
+@router.post("/ai-models/", response_model=StandardResponse[AIModel])
 def create_ai_model(
     *,
     db: Session = Depends(deps.get_db),
@@ -148,10 +149,10 @@ def create_ai_model(
     Create new AI model.
     """
     ai_model = crud_ai.create_ai_model(db=db, ai_model=ai_model_in)
-    return ai_model
+    return StandardResponse(data=ai_model, message="AI model created successfully.")
 
 
-@router.get("/ai-models/{ai_model_id}", response_model=AIModel)
+@router.get("/ai-models/{ai_model_id}", response_model=StandardResponse[AIModel])
 def read_ai_model(
     *,
     db: Session = Depends(deps.get_db),
@@ -162,11 +163,11 @@ def read_ai_model(
     """
     ai_model = crud_ai.get_ai_model(db=db, ai_model_id=ai_model_id)
     if not ai_model:
-        raise HTTPException(status_code=404, detail="AI Model not found")
-    return ai_model
+        return StandardResponse(success=False, message="AI Model not found")
+    return StandardResponse(data=ai_model, message="AI model retrieved successfully.")
 
 
-@router.get("/ai-models/", response_model=List[AIModel])
+@router.get("/ai-models/", response_model=StandardResponse[List[AIModel]])
 def read_ai_models(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
@@ -176,4 +177,4 @@ def read_ai_models(
     Retrieve AI models.
     """
     ai_models = crud_ai.get_ai_models(db=db, skip=skip, limit=limit)
-    return ai_models
+    return StandardResponse(data=ai_models, message="AI models retrieved successfully.")

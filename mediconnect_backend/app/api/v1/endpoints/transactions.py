@@ -6,10 +6,11 @@ from app.api.v1 import deps
 from app.crud.crud_transaction import crud_transaction
 from app.schemas.transaction import Transaction
 from app.models.user import User
+from app.schemas.response import StandardResponse
 
 router = APIRouter()
 
-@router.get("/", response_model=List[Transaction])
+@router.get("/", response_model=StandardResponse[List[Transaction]])
 async def read_transactions(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
@@ -20,10 +21,10 @@ async def read_transactions(
     Retrieve transactions.
     """
     transactions = await crud_transaction.get_transactions(db, skip=skip, limit=limit)
-    return transactions
+    return StandardResponse(data=transactions, message="Transactions retrieved successfully.")
 
 
-@router.get("/user/{user_id}", response_model=List[Transaction])
+@router.get("/user/{user_id}", response_model=StandardResponse[List[Transaction]])
 async def read_transactions_by_user(
     user_id: int,
     db: AsyncSession = Depends(deps.get_db),
@@ -37,10 +38,10 @@ async def read_transactions_by_user(
     transactions = await crud_transaction.get_by_user(
         db, user_id=user_id, skip=skip, limit=limit
     )
-    return transactions
+    return StandardResponse(data=transactions, message="Transactions retrieved successfully.")
 
 
-@router.get("/revenue", response_model=float)
+@router.get("/revenue", response_model=StandardResponse[float])
 async def get_total_revenue(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_admin),
@@ -49,10 +50,10 @@ async def get_total_revenue(
     Get total revenue.
     """
     total_revenue = await crud_transaction.get_total_revenue(db)
-    return total_revenue
+    return StandardResponse(data=total_revenue, message="Total revenue retrieved successfully.")
 
 
-@router.get("/revenue/by-month", response_model=List[dict])
+@router.get("/revenue/by-month", response_model=StandardResponse[List[dict]])
 async def get_revenue_by_month(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_admin),
@@ -61,4 +62,4 @@ async def get_revenue_by_month(
     Get revenue by month.
     """
     revenue_by_month = await crud_transaction.get_revenue_by_month(db)
-    return revenue_by_month
+    return StandardResponse(data=revenue_by_month, message="Revenue by month retrieved successfully.")

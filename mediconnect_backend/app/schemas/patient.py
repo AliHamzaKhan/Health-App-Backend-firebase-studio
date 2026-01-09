@@ -3,7 +3,10 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, ForwardRef
 from datetime import date
 
-Appointment = ForwardRef('''Appointment''')
+Appointment = ForwardRef('Appointment')
+Review = ForwardRef('Review')
+Notification = ForwardRef('Notification')
+MedicalRecord = ForwardRef('MedicalRecord')
 
 # Shared properties
 class PatientBase(BaseModel):
@@ -27,7 +30,10 @@ class PatientUpdate(PatientBase):
 # Properties shared by models stored in DB
 class PatientInDBBase(PatientBase):
     id: int
-    appointments: List['Appointment'] = []
+    appointments: List[Appointment] = []
+    reviews: List[Review] = []
+    notifications: List[Notification] = []
+    medical_records: List[MedicalRecord] = []
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -38,3 +44,8 @@ class Patient(PatientInDBBase):
 # Properties stored in DB
 class PatientInDB(PatientInDBBase):
     pass
+
+Appointment.update_forward_refs(Appointment=Appointment)
+Review.update_forward_refs(Review=Review)
+Notification.update_forward_refs(Notification=Notification)
+MedicalRecord.update_forward_refs(MedicalRecord=MedicalRecord)

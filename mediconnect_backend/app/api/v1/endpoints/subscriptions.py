@@ -6,10 +6,11 @@ from app.api.v1 import deps
 from app.crud.crud_subscription import subscription as crud_subscription
 from app.schemas.subscription import Subscription, SubscriptionCreate, SubscriptionUpdate
 from app.models.user import User
+from app.schemas.response import StandardResponse
 
 router = APIRouter()
 
-@router.post("/", response_model=Subscription)
+@router.post("/", response_model=StandardResponse[Subscription])
 async def create_subscription(
     *,
     db: AsyncSession = Depends(deps.get_db),
@@ -21,15 +22,12 @@ async def create_subscription(
     """
     subscription = await crud_subscription.get_by_name(db, name=subscription_in.name)
     if subscription:
-        raise HTTPException(
-            status_code=400,
-            detail="The subscription with this name already exists in the system.",
-        )
+        return StandardResponse(success=False, message="The subscription with this name already exists in the system.")
     subscription = await crud_subscription.create(db, obj_in=subscription_in)
-    return subscription
+    return StandardResponse(data=subscription, message="Subscription created successfully.")
 
 
-@router.get("/{subscription_id}", response_model=Subscription)
+@router.get("/{subscription_id}", response_model=StandardResponse[Subscription])
 async def read_subscription(
     *,
     db: AsyncSession = Depends(deps.get_db),
@@ -40,14 +38,11 @@ async def read_subscription(
     """
     subscription = await crud_subscription.get(db, id=subscription_id)
     if not subscription:
-        raise HTTPException(
-            status_code=404,
-            detail="The subscription with this ID does not exist in the system.",
-        )
-    return subscription
+        return StandardResponse(success=False, message="The subscription with this ID does not exist in the system.")
+    return StandardResponse(data=subscription, message="Subscription retrieved successfully.")
 
 
-@router.get("/", response_model=List[Subscription])
+@router.get("/", response_model=StandardResponse[List[Subscription]])
 async def read_subscriptions(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
@@ -57,10 +52,10 @@ async def read_subscriptions(
     Retrieve subscriptions.
     """
     subscriptions = await crud_subscription.get_multi(db, skip=skip, limit=limit)
-    return subscriptions
+    return StandardResponse(data=subscriptions, message="Subscriptions retrieved successfully.")
 
 
-@router.put("/{subscription_id}", response_model=Subscription)
+@router.put("/{subscription_id}", response_model=StandardResponse[Subscription])
 async def update_subscription(
     *,
     db: AsyncSession = Depends(deps.get_db),
@@ -73,15 +68,12 @@ async def update_subscription(
     """
     subscription = await crud_subscription.get(db, id=subscription_id)
     if not subscription:
-        raise HTTPException(
-            status_code=404,
-            detail="The subscription with this ID does not exist in the system.",
-        )
+        return StandardResponse(success=False, message="The subscription with this ID does not exist in the system.")
     subscription = await crud_subscription.update(db, db_obj=subscription, obj_in=subscription_in)
-    return subscription
+    return StandardResponse(data=subscription, message="Subscription updated successfully.")
 
 
-@router.delete("/{subscription_id}", response_model=Subscription)
+@router.delete("/{subscription_id}", response_model=StandardResponse[Subscription])
 async def delete_subscription(
     *,
     db: AsyncSession = Depends(deps.get_db),
@@ -93,9 +85,6 @@ async def delete_subscription(
     """
     subscription = await crud_subscription.get(db, id=subscription_id)
     if not subscription:
-        raise HTTPException(
-            status_code=404,
-            detail="The subscription with this ID does not exist in the system.",
-        )
+        return StandardResponse(success=False, message="The subscription with this ID does not exist in the system.")
     subscription = await crud_subscription.remove(db, id=subscription_id)
-    return subscription
+    return StandardResponse(data=subscription, message="Subscription deleted successfully.")

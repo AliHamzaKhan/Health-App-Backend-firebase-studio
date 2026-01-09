@@ -1,3 +1,4 @@
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from datetime import datetime, timedelta
@@ -15,22 +16,26 @@ async def send_appointment_reminders():
         now = datetime.utcnow()
         twenty_four_hours_later = now + timedelta(hours=24)
 
-        stmt = select(Appointment).where(
-            Appointment.status == 'UPCOMING',
-            Appointment.time >= now,
-            Appointment.time <= twenty_four_hours_later,
-            Appointment.reminder_sent == False
+        stmt = (
+            select(Appointment)
+            .where(
+                Appointment.status == 'UPCOMING',
+                Appointment.time >= now,
+                Appointment.time <= twenty_four_hours_later,
+                Appointment.reminder_sent == False
+            )
+            .options(
+                joinedload(Appointment.patient).joinedload(Patient.user),
+                joinedload(Appointment.doctor).joinedload(Doctor.user)
+            )
         )
+
         result = await db.execute(stmt)
         appointments = result.scalars().all()
 
         for appt in appointments:
-            # Get patient and doctor users
-            patient = await db.get(Patient, appt.patient_id)
-            doctor = await db.get(Doctor, appt.doctor_id)
-            
-            patient_user = await db.get(User, patient.user_id)
-            doctor_user = await db.get(User, doctor.user_id)
+            patient_user = appt.patient.user
+            doctor_user = appt.doctor.user
 
             # Create notifications
             patient_notification = Notification(
@@ -44,6 +49,5 @@ async def send_appointment_reminders():
 
             db.add_all([patient_notification, doctor_notification])
             appt.reminder_sent = True
-
 
         await db.commit()

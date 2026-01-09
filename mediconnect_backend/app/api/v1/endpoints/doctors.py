@@ -1,15 +1,16 @@
 from typing import Any, List
 
-from fastapi import APIRouter, Body, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud, models, schemas
 from app.api import deps
+from app.schemas.response import StandardResponse
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[schemas.Doctor])
+@router.get("/", response_model=StandardResponse[List[schemas.Doctor]])
 async def read_doctors(
         db: AsyncSession = Depends(deps.get_db),
         skip: int = 0,
@@ -19,10 +20,10 @@ async def read_doctors(
     Retrieve doctors.
     """
     doctors = await crud.doctor.get_multi(db, skip=skip, limit=limit)
-    return doctors
+    return StandardResponse(data=doctors, message="Doctors retrieved successfully.")
 
 
-@router.post("/", response_model=schemas.Doctor)
+@router.post("/", response_model=StandardResponse[schemas.Doctor])
 async def create_doctor(
         *,
         db: AsyncSession = Depends(deps.get_db),
@@ -34,15 +35,12 @@ async def create_doctor(
     """
     doctor = await crud.doctor.get_by_email(db, email=doctor_in.email)
     if doctor:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this username already exists in the system.",
-        )
+        return StandardResponse(success=False, message="The user with this username already exists in the system.")
     doctor = await crud.doctor.create(db, obj_in=doctor_in)
-    return doctor
+    return StandardResponse(data=doctor, message="Doctor created successfully.")
 
 
-@router.put("/{id}", response_model=schemas.Doctor)
+@router.put("/{id}", response_model=StandardResponse[schemas.Doctor])
 async def update_doctor(
         *,
         db: AsyncSession = Depends(deps.get_db),
@@ -55,15 +53,12 @@ async def update_doctor(
     """
     doctor = await crud.doctor.get(db, id=id)
     if not doctor:
-        raise HTTPException(
-            status_code=404,
-            detail="The user with this username does not exist in the system",
-        )
+        return StandardResponse(success=False, message="The user with this username does not exist in the system")
     doctor = await crud.doctor.update(db, db_obj=doctor, obj_in=doctor_in)
-    return doctor
+    return StandardResponse(data=doctor, message="Doctor updated successfully.")
 
 
-@router.get("/{id}", response_model=schemas.Doctor)
+@router.get("/{id}", response_model=StandardResponse[schemas.Doctor])
 async def read_doctor_by_id(
         id: int,
         db: AsyncSession = Depends(deps.get_db),
@@ -73,11 +68,11 @@ async def read_doctor_by_id(
     """
     doctor = await crud.doctor.get(db, id=id)
     if not doctor:
-        raise HTTPException(status_code=404, detail="Doctor not found")
-    return doctor
+        return StandardResponse(success=False, message="Doctor not found")
+    return StandardResponse(data=doctor, message="Doctor retrieved successfully.")
 
 
-@router.get("/{doctor_id}/reviews", response_model=List[schemas.Review])
+@router.get("/{doctor_id}/reviews", response_model=StandardResponse[List[schemas.Review]])
 async def read_doctor_reviews(
         doctor_id: int,
         db: AsyncSession = Depends(deps.get_db),
@@ -90,10 +85,10 @@ async def read_doctor_reviews(
     reviews = await crud.review.get_multi_by_doctor(
         db, doctor_id=doctor_id, skip=skip, limit=limit
     )
-    return reviews
+    return StandardResponse(data=reviews, message="Doctor reviews retrieved successfully.")
 
 
-@router.post("/{doctor_id}/reviews", response_model=schemas.Review)
+@router.post("/{doctor_id}/reviews", response_model=StandardResponse[schemas.Review])
 async def create_doctor_review(
         doctor_id: int,
         review_in: schemas.ReviewCreateForPatient,
@@ -107,9 +102,10 @@ async def create_doctor_review(
         db, patient_id=current_patient.id, doctor_id=doctor_id
     )
     if existing_review:
-        raise HTTPException(status_code=400, detail="You have already reviewed this doctor.")
+        return StandardResponse(success=False, message="You have already reviewed this doctor.")
 
-    review = await crud.review.create(db, obj_in=schemas.ReviewCreate(
+    review_create = schemas.ReviewCreate(
         **review_in.model_dump(), patient_id=current_patient.id, doctor_id=doctor_id
-    ))
-    return review
+    )
+    review = await crud.review.create(db, obj_in=review_create)
+    return StandardResponse(data=review, message="Review created successfully.")
